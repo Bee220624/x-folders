@@ -1,0 +1,11 @@
+node_modules/
+.output/
+.wxt/
+stats.html
+*.log
+.DS_Store
+
+# Intermediate DOM capture. The committed fixtures are derived from it;
+# the raw file is one redaction pass away from the live page and is not
+# something to keep in the tree.
+tests/fixtures/raw/
