@@ -19,6 +19,16 @@ export class VisibleTweetStore {
   readonly #pending = new Set<TweetId>();
   readonly #listeners = new Set<CountsListener>();
   #timer: ReturnType<typeof setTimeout> | null = null;
+  /**
+   * Monotonic tick used to order local writes against in-flight reads.
+   *
+   * A count read starts when a tweet scrolls into view; the user can save that
+   * tweet from the popover while the read is still in flight. The reply was
+   * computed BEFORE the save, so applying it blindly would flip the button back
+   * to "not saved" a moment after a save that actually succeeded.
+   */
+  #epoch = 0;
+  readonly #localEpoch = new Map<TweetId, number>();
 
   get counts(): ReadonlyMap<TweetId, number> {
     return this.#counts;
@@ -39,6 +49,7 @@ export class VisibleTweetStore {
       this.#timer = null;
       this.#listeners.clear();
       this.#pending.clear();
+      this.#localEpoch.clear();
     });
   }
 
@@ -65,6 +76,7 @@ export class VisibleTweetStore {
 
   setLocal(tweetId: TweetId, count: number): void {
     this.#counts.set(tweetId, count);
+    this.#localEpoch.set(tweetId, ++this.#epoch);
     this.#emit();
   }
 
@@ -80,14 +92,19 @@ export class VisibleTweetStore {
     if (this.#pending.size === 0) return;
     const ids = [...this.#pending];
     this.#pending.clear();
+    const startedAt = ++this.#epoch;
 
     for (let i = 0; i < ids.length; i += MEMBERSHIP_COUNT_BATCH_MAX) {
       const chunk = ids.slice(i, i + MEMBERSHIP_COUNT_BATCH_MAX);
       const result = await rpc('memberships.getCountsForTweets', { tweetIds: chunk });
       if (!result.ok) continue;
       // Every requested id is present in the response, so an unsaved tweet is
-      // written back as 0 rather than keeping a stale filled icon.
+      // written back as 0 rather than keeping a stale filled icon — unless a
+      // save landed locally after this read began, in which case the local
+      // value is the newer truth and the reply is stale for that id alone.
       for (const [tweetId, count] of Object.entries(result.data)) {
+        const localAt = this.#localEpoch.get(tweetId);
+        if (localAt !== undefined && localAt > startedAt) continue;
         this.#counts.set(tweetId, count);
       }
     }
@@ -102,6 +119,9 @@ export class VisibleTweetStore {
   retain(visible: ReadonlySet<TweetId>): void {
     for (const tweetId of this.#counts.keys()) {
       if (!visible.has(tweetId)) this.#counts.delete(tweetId);
+    }
+    for (const tweetId of this.#localEpoch.keys()) {
+      if (!visible.has(tweetId)) this.#localEpoch.delete(tweetId);
     }
   }
 }

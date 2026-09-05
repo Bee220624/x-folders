@@ -255,6 +255,60 @@ describe('VisibleTweetStore', () => {
     expect(calls).toBe(2);
   });
 
+  it('does not let an in-flight read clobber a save that landed after it started', async () => {
+    // Initialised to a no-op rather than null: TypeScript cannot see that a
+    // Promise executor runs synchronously, so a nullable binding narrows to
+    // `null` and the later call is rejected as uncallable.
+    let release = (): void => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.spyOn(chrome.runtime, 'sendMessage').mockImplementation(((
+      message: unknown,
+      callback: (response: unknown) => void,
+    ) => {
+      const { payload } = message as { payload: { tweetIds: string[] } };
+      // The reply is computed from the state BEFORE the save, and lands after it.
+      void gate.then(() =>
+        callback({
+          ok: true,
+          data: Object.fromEntries(payload.tweetIds.map((id) => [id, 0])),
+        }),
+      );
+      return undefined;
+    }) as typeof chrome.runtime.sendMessage);
+
+    const store = new VisibleTweetStore();
+    store.attach(registry);
+    store.track(['A']);
+    await new Promise((resolve) => setTimeout(resolve, 80));
+
+    // The tweet scrolled into view (count read in flight); now the user saves it
+    // from the popover and the button fills in optimistically.
+    store.setLocal('A', 1);
+    expect(store.countFor('A')).toBe(1);
+
+    release();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    // Without the epoch guard the stale reply writes 0 back and the button
+    // silently reverts to "not saved" moments after a successful save.
+    expect(store.countFor('A')).toBe(1);
+  });
+
+  it('still applies a read that started after the local write', async () => {
+    const store = new VisibleTweetStore();
+    store.attach(registry);
+    store.setLocal('A', 1);
+
+    mockRpc(() => ({ A: 5 }));
+    store.invalidate(['A']);
+    await new Promise((resolve) => setTimeout(resolve, 80));
+
+    // The guard must be ordering-based, not a blanket "local always wins".
+    expect(store.countFor('A')).toBe(5);
+  });
+
   it('drops ids that scrolled out of view', () => {
     const store = new VisibleTweetStore();
     store.setLocal('1', 1);

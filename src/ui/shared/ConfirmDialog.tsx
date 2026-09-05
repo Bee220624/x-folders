@@ -13,8 +13,15 @@ export interface ConfirmDialogProps {
 export function ConfirmDialog(props: ConfirmDialogProps): preact.JSX.Element {
   const confirmRef = useRef<HTMLButtonElement>(null);
 
+  // Focus ONCE, on mount. Keying this on `props` would re-run on every render —
+  // and this component re-renders whenever a background store refresh arrives
+  // from another tab. A user who deliberately moved to 取消 would have focus
+  // yanked back onto the destructive button under them.
   useEffect(() => {
     confirmRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
         event.stopPropagation();
@@ -23,7 +30,7 @@ export function ConfirmDialog(props: ConfirmDialogProps): preact.JSX.Element {
     };
     document.addEventListener('keydown', onKeyDown, true);
     return () => document.removeEventListener('keydown', onKeyDown, true);
-  }, [props]);
+  }, [props.onCancel]);
 
   return (
     <div
