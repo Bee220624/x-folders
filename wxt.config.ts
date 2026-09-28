@@ -27,6 +27,9 @@ export default defineConfig({
     // `unlimitedStorage` exempts our IndexedDB from quota + eviction, which the
     // "data survives a reload" requirement depends on.
     permissions: ['storage', 'unlimitedStorage'],
+    // The toolbar icon is one of the two ways into the side panel; without an
+    // `action` key, sidePanel.setPanelBehavior has nothing to bind to.
+    action: { default_title: 'X Folders' },
     // Extension-root-relative, no leading slash — the conventional form Chrome
     // resolves without ambiguity.
     icons: {
