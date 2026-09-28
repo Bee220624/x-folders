@@ -1,9 +1,11 @@
 import { render } from 'preact';
+import { requestOpenSidePanel } from '@/messaging/sidePanelClient';
 import type { FolderStore } from '@/state/FolderStore';
 import { FolderViewApp } from '@/ui/folder-view/FolderViewApp';
 import { FOLDER_VIEW_CSS } from '@/ui/folder-view/folderView.css';
 import { createShadowHost, type ShadowHostHandle } from '@/ui/shared/ShadowHost';
 import { BASE_CSS, FEEDBACK_CSS } from '@/ui/shared/theme.css';
+import { toasts } from '@/ui/shared/toastStore';
 import type { CleanupRegistry } from '@/utils/cleanup';
 import { createLogger } from '@/utils/logger';
 import { locatePrimaryColumn } from './PrimaryColumnLocator';
@@ -130,9 +132,24 @@ export class FolderViewMount {
         folderId={folderId}
         onClose={() => this.close()}
         onMembershipChanged={this.deps.onMembershipChanged}
+        onOpenInSidePanel={() => this.#openInSidePanel()}
       />,
       handle.mount,
     );
+  }
+
+  /**
+   * Stays synchronous up to `requestOpenSidePanel()`: the browser only lets the
+   * background open the panel while this click still counts as a gesture.
+   * Whether it does at all from a page click is exactly what M1 verifies on real
+   * Chrome; the fallback is the toolbar icon.
+   */
+  #openInSidePanel(): void {
+    void requestOpenSidePanel().then((result) => {
+      if (!result.ok) {
+        toasts.show('无法从页面打开侧边栏，请点浏览器工具栏上的扩展图标。', { tone: 'danger' });
+      }
+    });
   }
 
   /**

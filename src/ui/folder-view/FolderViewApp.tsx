@@ -20,6 +20,8 @@ export interface FolderViewAppProps {
   folderId: FolderId;
   onClose: () => void;
   onMembershipChanged: (tweetId: TweetId, membershipCount: number) => void;
+  /** Present only on the page overlay: hands the reading over to the side panel. */
+  onOpenInSidePanel?: () => void;
 }
 
 type ListStatus = 'loading' | 'ready' | 'error';
@@ -34,6 +36,14 @@ function CloseIcon(): preact.JSX.Element {
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     ref.current?.replaceChildren(createIcon('close', 20));
+  }, []);
+  return <span ref={ref} aria-hidden="true" style="display:inline-flex" />;
+}
+
+function SidePanelIcon(): preact.JSX.Element {
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    ref.current?.replaceChildren(createIcon('sidePanel', 20));
   }, []);
   return <span ref={ref} aria-hidden="true" style="display:inline-flex" />;
 }
@@ -242,6 +252,17 @@ export function FolderViewApp(props: FolderViewAppProps): preact.JSX.Element {
           </span>
           <span class="xf-fv-count">{`${count} 条收藏`}</span>
         </div>
+        {props.onOpenInSidePanel !== undefined && (
+          <button
+            type="button"
+            class="xf-icon-button xf-fv-side-panel"
+            aria-label="在侧边栏中打开"
+            title="在侧边栏中打开"
+            onClick={props.onOpenInSidePanel}
+          >
+            <SidePanelIcon />
+          </button>
+        )}
       </header>
 
       <div class="xf-fv-list" ref={listRef} onScroll={onScroll}>

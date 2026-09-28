@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerSidePanel } from '@/background/sidePanel';
+import { requestOpenSidePanel } from '@/messaging/sidePanelClient';
 import { OPEN_SIDE_PANEL, type SimpleResponse } from '@/messaging/sidePanelProtocol';
 
 type Listener = (
@@ -54,5 +55,39 @@ describe('background side panel opener', () => {
     expect(listener({ kind: 'xf:rpc', method: 'health.ping' }, {}, sendResponse)).toBe(false);
     expect(open).not.toHaveBeenCalled();
     expect(sendResponse).not.toHaveBeenCalled();
+  });
+});
+
+describe('requestOpenSidePanel', () => {
+  beforeEach(() => {
+    vi.mocked(chrome.runtime.sendMessage).mockReset();
+    delete (chrome.runtime as { lastError?: { message: string } }).lastError;
+  });
+
+  it('sends the request synchronously, while the click is still a gesture', async () => {
+    vi.mocked(chrome.runtime.sendMessage).mockImplementation(
+      ((_message: unknown, callback: (response: unknown) => void) => callback({ ok: true })) as never,
+    );
+    const pending = requestOpenSidePanel();
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      { kind: OPEN_SIDE_PANEL },
+      expect.any(Function),
+    );
+    await expect(pending).resolves.toEqual({ ok: true });
+  });
+
+  it('turns an unreachable background into a plain failure', async () => {
+    vi.mocked(chrome.runtime.sendMessage).mockImplementation(
+      ((_message: unknown, callback: (response: unknown) => void) => {
+        (chrome.runtime as { lastError?: { message: string } }).lastError = {
+          message: 'Extension context invalidated.',
+        };
+        callback(undefined);
+        delete (chrome.runtime as { lastError?: { message: string } }).lastError;
+      }) as never,
+    );
+    await expect(requestOpenSidePanel()).resolves.toEqual(
+      expect.objectContaining({ ok: false }),
+    );
   });
 });

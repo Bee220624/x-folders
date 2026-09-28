@@ -26,6 +26,7 @@ export const FOLDER_VIEW_CSS = `
   border-bottom: 1px solid var(--xf-border);
 }
 .xf-fv-title { display: flex; flex-direction: column; min-width: 0; }
+.xf-fv-side-panel { margin-left: auto; }
 .xf-fv-name {
   font-size: 17px;
   font-weight: 800;
