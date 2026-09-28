@@ -297,7 +297,9 @@ export function SidebarApp(props: SidebarAppProps): preact.JSX.Element {
         </button>
         {panelOpen && (
           <>
-            <div class="xf-menu-layer" onClick={() => setPanelOpen(false)} />
+            {/* Its own layer, below the context menu and the delete dialog: sharing
+                theirs let this one cover them and swallow their first click. */}
+            <div class="xf-narrow-layer" onClick={() => setPanelOpen(false)} />
             <div
               class="xf-narrow-panel"
               style={`left:${panelPos.left}px;top:${panelPos.top}px`}

@@ -31,7 +31,8 @@ export const SIDEBAR_CSS = `
 
 .xf-editor { padding: 4px 6px 4px 24px; }
 
-.xf-menu-layer { position: fixed; inset: 0; z-index: 4; }
+.xf-narrow-layer { position: fixed; inset: 0; z-index: 4; }
+.xf-menu-layer { position: fixed; inset: 0; z-index: 6; }
 .xf-menu-anchored { position: absolute; }
 
 /* Narrow-sidebar mode: a nav-sized icon button plus a floating panel. */

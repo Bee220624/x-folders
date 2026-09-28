@@ -151,7 +151,7 @@ export const FEEDBACK_CSS = `
   display: flex;
   flex-direction: column;
   gap: 8px;
-  z-index: 2;
+  z-index: 8;
   pointer-events: none;
 }
 .xf-toast {
@@ -183,7 +183,7 @@ export const FEEDBACK_CSS = `
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, .4);
-  z-index: 3;
+  z-index: 7;
 }
 .xf-dialog {
   width: min(90vw, 340px);
