@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X Folders 界面方案对比</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #eceef1; color: #1d1d1f; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif; }
+  .controls { padding: 16px 20px 8px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+  .seg { display: inline-flex; background: #fff; border: 1px solid #d0d4da; border-radius: 10px; padding: 3px; gap: 3px; }
+  .seg button { border: 0; background: transparent; padding: 8px 14px; border-radius: 7px; font: inherit; font-size: 14px; color: #3c4043; cursor: pointer; }
+  .seg button.on { background: #1d9bf0; color: #fff; }
+  .caption { margin: 0 20px 12px; padding: 10px 14px; background: #fff; border: 1px solid #d0d4da; border-radius: 10px; font-size: 14px; line-height: 22px; max-width: 1280px; }
+  .caption b { color: #0f1419; }
+  .stage { margin: 0 20px 24px; position: relative; }
+  .frame { position: relative; width: 1280px; height: 800px; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #b9bec6; box-shadow: 0 12px 32px rgba(0,0,0,.16); transform-origin: top left; }
+  svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  svg.i.sm { width: 18px; height: 18px; }
+  svg.i.xs { width: 15px; height: 15px; }
+  svg.i.fill { fill: currentColor; }
+  .chrome { height: 76px; background: #dee1e6; position: relative; }
+  .lights { position: absolute; left: 14px; top: 13px; display: flex; gap: 8px; }
+  .lights span { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .tabstrip { height: 36px; display: flex; align-items: flex-end; padding-left: 84px; }
+  .tab { width: 230px; height: 30px; background: #fff; border-radius: 9px 9px 0 0; display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 12px; color: #202124; }
+  .tab .x { margin-left: auto; color: #5f6368; }
+  .toolbar { height: 40px; background: #fff; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-bottom: 1px solid #dadce0; color: #5f6368; }
+  .omnibox { flex: 1; height: 30px; border-radius: 15px; background: #f1f3f4; display: flex; align-items: center; gap: 8px; padding: 0 14px; font-size: 13px; color: #202124; }
+  .tbi { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #5f6368; position: relative; }
+  .tbi.active { background: #d3e3fd; color: #0b57d0; }
+  .page { position: absolute; top: 76px; left: 0; right: 0; bottom: 0; display: flex; background: #fff; }
+  .xpage { position: relative; height: 100%; overflow: hidden; background: #fff; color: #0f1419; font-size: 15px; display: flex; justify-content: center; }
+  .xnav { height: 100%; display: flex; flex-direction: column; padding: 0 8px; }
+  .xnav .logo { font-size: 30px; font-weight: 800; padding: 6px 12px 4px; }
+  .xnav .item { display: flex; align-items: center; gap: 18px; padding: 8px 12px; font-size: 18px; border-radius: 999px; white-space: nowrap; }
+  .xnav .item.cur { font-weight: 700; }
+  .xnav.icons { width: 88px; align-items: center; }
+  .xnav.icons .item span { display: none; }
+  .xnav.full { width: 262px; }
+  .postbtn { background: #0f1419; color: #fff; border-radius: 999px; height: 50px; display: grid; place-items: center; font-weight: 700; font-size: 17px; margin: 10px 4px; }
+  .xnav.icons .postbtn { width: 50px; font-size: 22px; }
+  .acct { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 12px; font-size: 14px; }
+  .acct .avatar { width: 40px; height: 40px; }
+  .xmain { width: 600px; border-left: 1px solid #eff3f4; border-right: 1px solid #eff3f4; height: 100%; position: relative; overflow: hidden; }
+  .xright { width: 350px; padding: 6px 0 0 28px; }
+  .xsearch { height: 42px; border-radius: 999px; border: 1px solid #cfd9de; display: flex; align-items: center; gap: 10px; padding: 0 16px; color: #536471; font-size: 15px; }
+  .xbox { margin-top: 14px; border: 1px solid #eff3f4; border-radius: 16px; padding: 12px 16px; }
+  .xbox h4 { margin: 0 0 8px; font-size: 20px; font-weight: 800; }
+  .trend { padding: 8px 0; font-size: 13px; color: #536471; }
+  .trend b { display: block; color: #0f1419; font-size: 15px; margin-top: 2px; }
+  .xhead { height: 53px; display: flex; align-items: center; gap: 24px; padding: 0 16px; border-bottom: 1px solid #eff3f4; font-size: 20px; font-weight: 700; background: rgba(255,255,255,.95); }
+  .tabs2 { height: 53px; display: flex; border-bottom: 1px solid #eff3f4; }
+  .tabs2 div { flex: 1; display: grid; place-items: center; font-size: 15px; color: #536471; position: relative; }
+  .tabs2 div.on { color: #0f1419; font-weight: 700; }
+  .tabs2 div.on::after { content: ""; position: absolute; bottom: 0; width: 56px; height: 4px; border-radius: 2px; background: #1d9bf0; }
+  .compose { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #eff3f4; color: #536471; font-size: 20px; align-items: center; }
+  .tweet { display: flex; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #eff3f4; position: relative; }
+  .tweet.picked { background: #e8f5fd; box-shadow: inset 4px 0 0 #1d9bf0; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; flex: none; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 15px; }
+  .tbody { flex: 1; min-width: 0; }
+  .thead { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .thead b { font-weight: 700; }
+  .badge { display: inline-block; width: 16px; height: 16px; border-radius: 50%; background: #1d9bf0; color: #fff; font-size: 11px; line-height: 16px; text-align: center; vertical-align: -2px; margin: 0 2px; }
+  .muted { color: #536471; }
+  .ttext { font-size: 15px; line-height: 20px; margin-top: 2px; white-space: pre-wrap; word-break: break-word; }
+  .media { margin-top: 10px; border-radius: 16px; overflow: hidden; display: grid; gap: 2px; border: 1px solid #cfd9de; }
+  .media.n1 { grid-template-columns: 1fr; }
+  .media.n2, .media.n4 { grid-template-columns: 1fr 1fr; }
+  .img { height: 170px; position: relative; display: grid; place-items: center; color: rgba(255,255,255,.85); }
+  .media.n4 .img { height: 110px; }
+  .play { width: 52px; height: 52px; border-radius: 50%; background: #1d9bf0; display: grid; place-items: center; border: 3px solid #fff; color: #fff; }
+  .quote { margin-top: 10px; border: 1px solid #cfd9de; border-radius: 16px; padding: 10px 12px; font-size: 14px; line-height: 19px; }
+  .quote .qh { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+  .quote .avatar { width: 20px; height: 20px; font-size: 11px; }
+  .actions { display: flex; justify-content: space-between; margin-top: 10px; color: #536471; font-size: 13px; }
+  .actions .a { display: flex; align-items: center; gap: 5px; }
+  .actions .xf { color: #536471; border-radius: 50%; }
+  .actions .xf.saved { color: #1d9bf0; }
+  .side .tweet { padding: 10px 14px; }
+  .side .img { height: 118px; }
+  .side .media.n4 .img { height: 78px; }
+  .side .actions, .overlay .actions { display: none; }
+  .savedmeta { margin-top: 8px; font-size: 13px; color: #536471; display: flex; gap: 12px; align-items: center; }
+  .sp { width: 400px; flex: none; height: 100%; border-left: 1px solid #c7c7c7; background: #fff; display: flex; flex-direction: column; color: #0f1419; }
+  .sp-head { height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 12px; border-bottom: 1px solid #e3e3e3; font-size: 13px; color: #202124; background: #f8fafd; flex: none; }
+  .sp-head .grow { flex: 1; }
+  .search { margin: 10px 12px 6px; height: 38px; border-radius: 999px; background: #eff3f4; display: flex; align-items: center; gap: 8px; padding: 0 14px; color: #536471; font-size: 14px; flex: none; }
+  .tree { padding: 2px 8px 6px; font-size: 15px; flex: none; }
+  .tree .row { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 8px; }
+  .tree .row.child { padding-left: 34px; }
+  .tree .row.active { background: #e8f5fd; color: #1d9bf0; font-weight: 700; }
+  .tree .count { margin-left: auto; color: #536471; font-size: 13px; font-weight: 400; }
+  .tree .ttl { display: flex; align-items: center; gap: 6px; padding: 8px 8px 6px; font-weight: 800; font-size: 15px; }
+  .tree .ttl .plus { margin-left: auto; color: #1d9bf0; }
+  .listhead { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-top: 1px solid #eff3f4; border-bottom: 1px solid #eff3f4; font-weight: 800; font-size: 16px; flex: none; }
+  .listhead .muted { font-weight: 400; font-size: 14px; }
+  .sp-list { flex: 1; overflow: hidden; }
+  .navtree { border-top: 1px solid #eff3f4; margin: 4px 4px 0; padding-top: 4px; max-height: 190px; overflow: hidden; }
+  .navtree .tree { padding: 0; }
+  .overlay { position: absolute; inset: 0; background: #fff; z-index: 5; display: flex; flex-direction: column; }
+  .overlay .xhead { gap: 16px; height: auto; min-height: 53px; padding: 8px 16px; line-height: 24px; }
+  .overlay .xhead .sub { font-size: 13px; font-weight: 400; color: #536471; display: block; }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #1d9bf0; border: 1px solid #cfd9de; border-radius: 999px; padding: 4px 10px; white-space: nowrap; background: #fff; }
+  .popover { position: absolute; width: 300px; background: #fff; border-radius: 16px; box-shadow: 0 0 15px rgba(101,119,134,.25), 0 0 3px 1px rgba(101,119,134,.18); padding: 8px 0; z-index: 30; font-size: 15px; color: #0f1419; }
+  .popover .ph { font-weight: 800; font-size: 17px; padding: 6px 16px 8px; }
+  .popover .lbl { font-size: 13px; color: #536471; padding: 8px 16px 4px; }
+  .popover .row { display: flex; align-items: center; gap: 8px; padding: 8px 16px; }
+  .popover .row.child { padding-left: 42px; }
+  .popover .row .ck { margin-left: auto; color: #1d9bf0; }
+  .popover .row.hover { background: #f7f9f9; }
+  .popover .sep { height: 1px; background: #eff3f4; margin: 6px 0; }
+  .popover .new { color: #1d9bf0; font-weight: 700; }
+  .note { position: absolute; background: #fff7ed; border: 2px solid #f97316; color: #7c2d12; font-size: 14px; line-height: 20px; padding: 8px 12px; border-radius: 10px; max-width: 280px; box-shadow: 0 4px 12px rgba(0,0,0,.14); z-index: 60; }
+  .note b { color: #c2410c; }
+  .ring { position: absolute; border: 3px dashed #f97316; border-radius: 12px; z-index: 55; pointer-events: none; }
+  .detail .big { font-size: 17px; line-height: 24px; margin-top: 10px; white-space: pre-wrap; }
+  .detail .when { color: #536471; font-size: 15px; padding: 14px 0; border-bottom: 1px solid #eff3f4; }
+</style>
+</head>
+<body>
+<div class="controls">
+  <div class="seg" id="scheme">
+    <button data-v="embed" class="on">页面内模式（默认）</button>
+    <button data-v="panel">侧边栏模式</button>
+  </div>
+  <div class="seg" id="state">
+    <button data-v="browse" class="on">① 浏览收藏</button>
+    <button data-v="open">② 点开其中一条之后</button>
+    <button data-v="save">③ 保存一条帖子</button>
+  </div>
+</div>
+<p class="caption" id="caption"></p>
+<div class="stage" id="stage"><div class="frame" id="frame"></div></div>
+
+<script>
+const ICON = {
+  home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/>',
+  bell: '<path d="M6 16v-5a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/>',
+  grok: '<circle cx="12" cy="12" r="8"/><path d="M6 18 18 6"/>',
+  bookmark: '<path d="M6 3h12v18l-6-4.5L6 21z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
+  more: '<circle cx="12" cy="12" r="9"/><circle cx="8" cy="12" r=".6"/><circle cx="12" cy="12" r=".6"/><circle cx="16" cy="12" r=".6"/>',
+  folder: '<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.2h8.5A1.5 1.5 0 0 1 21 8.7v8.8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/>',
+  reply: '<path d="M5 5h14v10h-8l-5 4v-4H5z"/>',
+  repost: '<path d="M7 17V8h9"/><path d="m13 5 3 3-3 3"/><path d="M17 7v9H8"/><path d="m11 19-3-3 3-3"/>',
+  like: '<path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/>',
+  views: '<path d="M5 19v-7M10 19V6M15 19v-9M20 19v-4"/>',
+  share: '<path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/>',
+  back: '<path d="M20 12H5M11 5l-7 7 7 7"/>',
+  close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  down: '<path d="m6 9 6 6 6-6"/>',
+  right: '<path d="m9 6 6 6-6 6"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  play: '<path d="M9 7v10l8-5z"/>',
+  photo: '<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m20 16-5-5-8 8"/>',
+  puzzle: '<path d="M9 4h3v2a1.5 1.5 0 0 0 3 0V4h4v5h-2a1.5 1.5 0 0 0 0 3h2v7h-5v-2a1.5 1.5 0 0 0-3 0v2H4v-5h2a1.5 1.5 0 0 0 0-3H4V4z"/>',
+  pin: '<path d="M9 4h6l-1 5 3 3H7l3-3z"/><path d="M12 12v8"/>',
+  lock: '<rect x="6" y="11" width="12" height="9" rx="2"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/>',
+  dots: '<circle cx="6" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="18" cy="12" r="1"/>',
+  reload: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',
+  panel: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/>'
+};
+const ic = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24">${ICON[n]}</svg>`;
+
+const FOLDERS = [
+  { name: 'AI', open: true, count: 25, kids: [ { name: 'Agent', count: 12, active: true }, { name: 'LLM', count: 8 }, { name: 'Prompt', count: 5 } ] },
+  { name: '编程', count: 21 }, { name: '投资', count: 9 }, { name: '日语', count: 4 }
+];
+
+const SAVED = [
+  { av: '林', c: '#7856ff', name: '林研究员', v: true, handle: 'lin_research', time: '3小时', saved: '今天 14:02',
+    text: 'Agent 真正难的不是规划，而是失败之后怎么恢复。\n我们把工具调用的错误分成三类，分别配了重试策略，对比图如下：', media: { n: 2, colors: ['#8ab4d8', '#9fc5a8'] } },
+  { av: 'M', c: '#f91880', name: 'Maya Chen', v: false, handle: 'mayachen', time: '9月20日', saved: '9月21日',
+    text: '整理了一份多 Agent 协作的设计模式：路由、交接、共享黑板、审阅者……每个都附了最小可运行示例。',
+    quote: { av: 'O', c: '#0f1419', name: 'OpenBench', handle: 'openbench', text: '长任务 Agent 评测集 v2 发布：新增 120 个真实工作流任务。' } },
+  { av: '张', c: '#00ba7c', name: '张同学', v: false, handle: 'zhang_dev', time: '9月12日', saved: '9月12日',
+    text: '用 200 行代码写了个会自己修 bug 的小 Agent，关键是把测试输出原样喂回去。', media: { n: 1, video: true, colors: ['#5b7083'] } },
+  { av: '小', c: '#ff7a00', name: '小野', v: true, handle: 'ono_ai', time: '8月30日', saved: '8月31日',
+    text: '', media: { n: 4, colors: ['#c9a27e', '#7fa7c9', '#a3c98f', '#c98fb4'] } }
+];
+
+const TIMELINE = [
+  { av: 'W', c: '#1d9bf0', name: 'Wen', v: true, handle: 'wen_notes', time: '2小时',
+    text: '推荐一篇把 RAG 和 Agent 记忆放在一起讲的长文，读完对“什么时候该检索、什么时候该记住”清楚多了。', media: { n: 1, colors: ['#9db6c9'] }, stats: ['18', '42', '310', '2.1万'] },
+  { av: '林', c: '#7856ff', name: '林研究员', v: true, handle: 'lin_research', time: '3小时', savedCount: 1,
+    text: 'Agent 真正难的不是规划，而是失败之后怎么恢复。\n我们把工具调用的错误分成三类，分别配了重试策略，对比图如下：', media: { n: 2, colors: ['#8ab4d8', '#9fc5a8'] }, stats: ['6', '12', '96', '6,441'] }
+];
+
+function media(m) {
+  if (!m) return '';
+  const cells = m.colors.map(col => `<div class="img" style="background:${col}">${m.video ? '<div class="play">' + ic('play', 'fill sm') + '</div>' : ic('photo')}</div>`).join('');
+  return `<div class="media n${m.n}">${cells}</div>`;
+}
+function quote(q) {
+  if (!q) return '';
+  return `<div class="quote"><div class="qh"><div class="avatar" style="background:${q.c}">${q.av}</div><b>${q.name}</b><span class="muted">@${q.handle}</span></div>${q.text}</div>`;
+}
+function actions(t, opts = {}) {
+  const s = t.stats || ['', '', '', ''];
+  const saved = t.savedCount > 0;
+  return `<div class="actions">
+    <div class="a">${ic('reply', 'sm')}${s[0]}</div><div class="a">${ic('repost', 'sm')}${s[1]}</div>
+    <div class="a">${ic('like', 'sm')}${s[2]}</div><div class="a">${ic('views', 'sm')}${s[3]}</div>
+    <div class="a" style="gap:14px">${ic('bookmark', 'sm')}${ic('share', 'sm')}<span class="xf ${saved ? 'saved' : ''}" id="${opts.btnId || ''}">${ic('folder', 'sm' + (saved ? ' fill' : ''))}</span></div>
+  </div>`;
+}
+function tweet(t, opts = {}) {
+  return `<div class="tweet ${opts.picked ? 'picked' : ''}" id="${opts.id || ''}">
+    <div class="avatar" style="background:${t.c}">${t.av}</div>
+    <div class="tbody">
+      <div class="thead"><b>${t.name}</b>${t.v ? '<span class="badge">✓</span>' : ''} <span class="muted">@${t.handle} · ${t.time}</span></div>
+      ${t.text ? `<div class="ttext">${t.text}</div>` : ''}
+      ${media(t.media)}${quote(t.quote)}
+      ${opts.savedMeta ? `<div class="savedmeta">${ic('folder', 'xs')}保存于 ${t.saved}<span style="margin-left:auto">${ic('dots', 'xs')}</span></div>` : ''}
+      ${opts.actions ? actions(t, opts) : ''}
+    </div></div>`;
+}
+function treeRows(opts = {}) {
+  let html = '';
+  for (const f of FOLDERS) {
+    html += `<div class="row">${ic(f.open ? 'down' : 'right', 'xs')}${ic('folder', 'sm')}${f.name}<span class="count">${f.count}</span></div>`;
+    if (f.open) for (const k of f.kids) {
+      const act = k.active && opts.active !== false;
+      html += `<div class="row child ${act ? 'active' : ''}">${ic('folder', 'sm')}${k.name}<span class="count">${k.count}</span></div>`;
+    }
+  }
+  return html;
+}
+function chrome(url, title, panelActive) {
+  return `<div class="chrome">
+    <div class="lights"><span style="background:#ff5f57"></span><span style="background:#febc2e"></span><span style="background:#28c840"></span></div>
+    <div class="tabstrip"><div class="tab"><b style="font-size:14px">X</b>${title}<span class="x">${ic('close', 'xs')}</span></div></div>
+    <div class="toolbar"><span id="tb-back" style="display:grid;place-items:center">${ic('back', 'sm')}</span>${ic('reload', 'sm')}
+      <div class="omnibox">${ic('lock', 'xs')}${url}</div>
+      <div class="tbi ${panelActive ? 'active' : ''}" id="tb-xf">${ic('folder', 'sm')}</div>
+      <div class="tbi">${ic('puzzle', 'sm')}</div>
+      <div class="tbi"><div class="avatar" style="width:24px;height:24px;font-size:11px;background:#8e6bbf">A</div></div>
+    </div></div>`;
+}
+function xnav(mode, withTree, entry) {
+  const items = [['home', '主页'], ['search', '探索'], ['bell', '通知'], ['chat', '聊天'], ['grok', 'Grok'], ['bookmark', '书签'], ['user', '个人资料'], ['more', '更多']];
+  if (entry) items.push(['folder', '我的收藏']);
+  const tree = withTree ? `<div class="navtree" id="navtree"><div class="tree"><div class="ttl">我的收藏<span class="plus">${ic('plus', 'sm')}</span></div>${treeRows({ active: withTree !== 'inactive' })}</div></div>` : '';
+  return `<div class="xnav ${mode}">
+    <div class="logo">𝕏</div>
+    ${items.map(([i, l], idx) => `<div class="item ${idx === 0 ? 'cur' : ''}" ${l === '我的收藏' ? 'id="nav-entry" style="color:#1d9bf0"' : ''}>${ic(i)}<span>${l}</span></div>`).join('')}
+    <div class="postbtn">${mode === 'icons' ? ic('plus') : '发帖'}</div>
+    ${tree}
+    <div class="acct"><div class="avatar" style="background:#8e6bbf">A</div>${mode === 'icons' ? '' : '<div><b>Alex</b><div class="muted">@alex_demo</div></div>'}</div>
+  </div>`;
+}
+function timeline(opts = {}) {
+  return `<div class="tabs2"><div class="on">为你推荐</div><div>正在关注</div></div>
+    <div class="compose"><div class="avatar" style="background:#8e6bbf">A</div>有什么新鲜事？</div>
+    ${TIMELINE.map((t, i) => tweet(t, { actions: true, btnId: i === 0 ? 'btn0' : (i === 1 ? 'btn1' : '') })).join('')}`;
+}
+function detail() {
+  const t = SAVED[0];
+  return `<div class="xhead">${ic('back')}帖子</div>
+    <div class="detail" style="padding:12px 16px">
+      <div style="display:flex;gap:10px;align-items:center"><div class="avatar" style="background:${t.c}">${t.av}</div><div><b>${t.name}</b><span class="badge">✓</span><div class="muted">@${t.handle}</div></div></div>
+      <div class="big">${t.text}</div>
+      ${media(t.media)}
+      <div class="when">下午 2:01 · 2026年9月28日 · <b style="color:#0f1419">6,441</b> 查看</div>
+      ${actions({ stats: ['6', '12', '96', ''], savedCount: 1 })}
+    </div>`;
+}
+function xright() {
+  return `<div class="xright"><div class="xsearch">${ic('search', 'sm')}搜索</div>
+    <div class="xbox"><h4>有什么新鲜事</h4>
+      <div class="trend">科技 · 趋势<b>#AIAgents</b></div><div class="trend">日本 的趋势<b>秋季新番</b></div><div class="trend">投资 · 趋势<b>$NVDA</b></div></div>
+    <div class="xbox"><h4>推荐关注</h4><div class="trend"><b>OpenBench</b>@openbench</div><div class="trend"><b>Maya Chen</b>@mayachen</div></div></div>`;
+}
+function sidepanel(state) {
+  const list = SAVED.map((t, i) => tweet(t, { savedMeta: true, picked: state === 'open' && i === 0, id: i === 0 ? 'card0' : '' })).join('');
+  return `<div class="sp" id="sp">
+    <div class="sp-head">${ic('folder', 'sm')}<b>帖子文件夹</b>${ic('down', 'xs')}<span class="grow"></span><span class="toggle" id="sp-toggle">${ic('panel', 'xs')}切换到页面内</span>${ic('pin', 'sm')}${ic('close', 'sm')}</div>
+    <div class="search">${ic('search', 'sm')}搜索收藏：正文、作者、@用户名</div>
+    <div class="tree"><div class="ttl">我的收藏<span class="plus">${ic('plus', 'sm')}</span></div>${treeRows()}</div>
+    <div class="listhead">AI / Agent <span class="muted">· 12 条 · 按保存时间</span></div>
+    <div class="sp-list side">${list}</div>
+  </div>`;
+}
+function overlay() {
+  return `<div class="overlay" id="overlay">
+    <div class="xhead">${ic('back')}<div>AI / Agent<span class="sub">12 条收藏 · 按保存时间</span></div><span style="margin-left:auto;display:flex;align-items:center;gap:14px"><span class="toggle" id="ov-toggle">${ic('panel', 'xs')}切换到侧边栏</span>${ic('dots')}</span></div>
+    <div class="search" style="margin:10px 16px">${ic('search', 'sm')}搜索收藏：正文、作者、@用户名</div>
+    <div class="side" style="border-top:1px solid #eff3f4">${SAVED.map((t, i) => tweet(t, { savedMeta: true, id: i === 0 ? 'card0' : '' })).join('')}</div>
+  </div>`;
+}
+function popover() {
+  return `<div class="popover" id="popover">
+    <div class="ph">保存到</div>
+    <div class="lbl">最近使用</div>
+    <div class="row hover">${ic('folder', 'sm')}AI / Agent<span class="ck">${ic('check', 'sm')}</span></div>
+    <div class="row">${ic('folder', 'sm')}编程</div>
+    <div class="sep"></div>
+    <div class="lbl">全部文件夹</div>
+    <div class="row">${ic('down', 'xs')}${ic('folder', 'sm')}AI</div>
+    <div class="row child">${ic('folder', 'sm')}Agent<span class="ck">${ic('check', 'sm')}</span></div>
+    <div class="row child">${ic('folder', 'sm')}LLM</div>
+    <div class="row child">${ic('folder', 'sm')}Prompt</div>
+    <div class="row">${ic('right', 'xs')}${ic('folder', 'sm')}编程</div>
+    <div class="row">${ic('right', 'xs')}${ic('folder', 'sm')}投资</div>
+    <div class="sep"></div>
+    <div class="row new">${ic('plus', 'sm')}新建文件夹</div>
+  </div>`;
+}
+
+const CAPTIONS = {
+  'panel|browse': '<b>侧边栏模式 · 浏览收藏：</b>文件夹树、搜索框和收藏列表都在右边的 Chrome 侧边栏里（点浏览器工具栏图标，或 X 左栏的「我的收藏」图标打开）。X 页面本身只多了帖子操作栏里的文件夹按钮和左栏的一个入口图标；侧边栏顶部的按钮一键切回页面内模式。侧边栏占掉约 400px，X 会自动切到窄布局：左栏只剩图标、右栏趋势区隐藏。',
+  'panel|open': '<b>侧边栏模式 · 点开其中一条之后：</b>左边的 X 标签页跳到这条原帖子，<b>侧边栏原样不动</b>：同一个文件夹、同样的滚动位置和搜索词，刚点过的那条高亮。看完直接点下一条。',
+  'panel|save': '<b>侧边栏模式 · 保存一条帖子：</b>点帖子操作栏里的文件夹按钮，弹出选择框，点一个文件夹就存进去并关闭。<b>这一步两种模式完全一样</b>，保存时不需要打开侧边栏。',
+  'embed|browse': '<b>页面内模式（默认）· 浏览收藏：</b>文件夹树在 X 左侧导航里（「发帖」按钮下面）；点文件夹后，一个覆盖层盖在 X 主栏上显示收藏列表和搜索框，X 的时间线还在它下面。X 保持宽布局，卡片和 X 主栏一样宽。标题栏右侧的按钮一键切到侧边栏模式。',
+  'embed|open': '<b>页面内模式（默认）· 点开其中一条之后：</b>页面跳到原帖子，收藏列表暂时关闭。看完点浏览器的<b>「返回」</b>，收藏列表自动回来：还是刚才的文件夹、搜索词和滚动位置。',
+  'embed|save': '<b>页面内模式（默认）· 保存一条帖子：</b>和侧边栏模式完全一样：点帖子上的文件夹按钮，弹出选择框，点一个文件夹存进去并关闭。'
+};
+
+let scheme = 'embed', state = 'browse';
+const frame = document.getElementById('frame');
+
+function place(el, target, dx, dy) {
+  const f = frame.getBoundingClientRect(), r = target.getBoundingClientRect();
+  const s = f.width / 1280;
+  el.style.left = ((r.left - f.left) / s + dx) + 'px';
+  el.style.top = ((r.top - f.top) / s + dy) + 'px';
+}
+function ring(target, pad = 6) {
+  const f = frame.getBoundingClientRect(), r = target.getBoundingClientRect(), s = f.width / 1280;
+  const el = document.createElement('div');
+  el.className = 'ring';
+  el.style.left = ((r.left - f.left) / s - pad) + 'px';
+  el.style.top = ((r.top - f.top) / s - pad) + 'px';
+  el.style.width = (r.width / s + pad * 2) + 'px';
+  el.style.height = (r.height / s + pad * 2) + 'px';
+  frame.appendChild(el);
+}
+function note(html, target, dx, dy) {
+  const el = document.createElement('div');
+  el.className = 'note';
+  el.innerHTML = html;
+  frame.appendChild(el);
+  place(el, target, dx, dy);
+}
+
+function render() {
+  const url = state === 'open' ? 'x.com/lin_research/status/1839…' : 'x.com/home';
+  const title = state === 'open' ? '林研究员：“Agent 真正…” / X' : '主页 / X';
+  let page;
+  if (scheme === 'panel') {
+    const main = state === 'open' ? detail() : timeline();
+    page = `<div class="xpage" style="width:880px">${xnav('icons', false, true)}<div class="xmain">${main}</div></div>${state === 'save' ? '' : sidepanel(state)}`;
+    if (state === 'save') page = `<div class="xpage" style="width:1280px">${xnav('full', false, true)}<div class="xmain">${timeline()}</div>${xright()}</div>`;
+  } else {
+    let main;
+    if (state === 'browse') main = timeline() + overlay();
+    else if (state === 'open') main = detail();
+    else main = timeline();
+    page = `<div class="xpage" style="width:1280px">${xnav('full', state === 'browse' ? true : 'inactive')}<div class="xmain">${main}</div>${xright()}</div>`;
+  }
+  frame.innerHTML = chrome(url, title, scheme === 'panel' && state !== 'save') + `<div class="page">${page}</div>`;
+  if (state === 'save') frame.querySelector('.xmain').insertAdjacentHTML('beforeend', popover());
+  document.getElementById('caption').innerHTML = CAPTIONS[scheme + '|' + state];
+  requestAnimationFrame(annotate);
+}
+
+function annotate() {
+  const q = (s) => frame.querySelector(s);
+  if (state === 'save') {
+    const btn = q('#btn1'), pop = q('#popover');
+    const f = frame.getBoundingClientRect(), r = btn.getBoundingClientRect(), s = f.width / 1280;
+    const main = q('.xmain').getBoundingClientRect();
+    pop.style.left = ((r.left - main.left) / s - 262) + 'px';
+    pop.style.top = ((r.top - main.top) / s - 470) + 'px';
+    ring(btn, 5);
+    note('帖子操作栏里的<b>文件夹按钮</b>（蓝色 = 已存进至少一个文件夹）', btn, 40, -30);
+    note('<b>保存弹层</b>：点一个文件夹 = 存进去并关闭；点已勾选的 = 移出。两种模式完全一样。', pop, -300, 40);
+    return;
+  }
+  if (scheme === 'panel') {
+    if (state === 'browse') {
+      ring(q('#sp'), -2);
+      note('<b>Chrome 原生侧边栏</b>：扩展自己的页面，X 改版碰不到它；切换标签、在 X 里跳转，它都一直在', q('#sp'), -300, 150);
+      ring(q('#btn0'), 5);
+      note('帖子操作栏里的<b>文件夹按钮</b>', q('#btn0'), -210, 24);
+      ring(q('#tb-xf'), 3);
+      note('工具栏图标，或 X 左栏的「我的收藏」图标，都能打开侧边栏', q('#tb-xf'), -640, 40);
+      ring(q('#nav-entry'), 3);
+      ring(q('#sp-toggle'), 3);
+    } else {
+      note('X 在同一个标签页里<b>跳到原帖子</b>', q('.xmain .detail'), 150, 260);
+      ring(q('#card0'), 0);
+      note('<b>侧边栏原样保留</b>：同一个文件夹、滚动位置、搜索词都在，刚点的这条高亮，接着点下一条', q('#card0'), -330, 150);
+    }
+  } else {
+    if (state === 'browse') {
+      ring(q('#navtree'), 2);
+      note('<b>注入到 X 左侧导航里的文件夹树</b>（X 改版左栏时最先坏的地方）', q('#navtree'), 270, 150);
+      ring(q('#overlay'), -3);
+      note('<b>覆盖层</b>盖在 X 主栏上显示收藏，X 的时间线还在它下面', q('#overlay'), 330, 470);
+      ring(q('#ov-toggle'), 4);
+      note('一键切到<b>侧边栏模式</b>（带着当前文件夹和搜索词）', q('#ov-toggle'), -120, 44);
+    } else {
+      note('页面跳到原帖子，收藏列表暂时关闭', q('.xmain .detail'), 150, 260);
+      ring(q('#tb-back'), 4);
+      note('看完点浏览器<b>「返回」</b>：收藏列表自动回来，还是刚才的文件夹、搜索词和滚动位置', q('#tb-back'), 10, 44);
+    }
+  }
+}
+
+function fit() {
+  const stage = document.getElementById('stage');
+  const w = stage.clientWidth;
+  const s = Math.min(1, w / 1280);
+  frame.style.transform = `scale(${s})`;
+  stage.style.height = (800 * s) + 'px';
+}
+for (const [id, set] of [['scheme', v => scheme = v], ['state', v => state = v]]) {
+  document.getElementById(id).addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    [...b.parentNode.children].forEach(x => x.classList.toggle('on', x === b));
+    set(b.dataset.v); render();
+  });
+}
+window.addEventListener('resize', () => { fit(); render(); });
+const m = /^#(panel|embed)-(browse|open|save)$/.exec(location.hash);
+if (m) {
+  [scheme, state] = [m[1], m[2]];
+  for (const [id, v] of [['scheme', scheme], ['state', state]])
+    [...document.getElementById(id).children].forEach(x => x.classList.toggle('on', x.dataset.v === v));
+}
+fit(); render();
+</script>
+</body>
+</html>
