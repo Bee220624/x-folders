@@ -34,7 +34,11 @@ export const X_SELECTORS = {
   statusLink: 'a[href*="/status/"]',
   /** Quoted-tweet wrapper — see the note above. */
   quoteContainer: 'div[role="link"][tabindex="0"]',
-  /** Promoted posts: permanently unextractable, must be skipped not retried. */
+  /**
+   * X's promotion/tracking marker. Not an ad signal on its own: X also puts it
+   * on ordinary posts, so extractTweet only skips it when no real permalink
+   * exists.
+   */
   promoted: '[data-testid="placementTracking"]',
   socialContext: '[data-testid="socialContext"]',
   card: '[data-testid="card.wrapper"]',

@@ -103,16 +103,25 @@ function outerAuthorName(
   return username;
 }
 
-export function extractTweet(root: Element, context: ExtractContext): ExtractOutcome {
-  // Promoted posts frequently carry no permalink at all. Skipping them by
-  // marker rather than by failure is what stops the 2s watchdog re-testing
-  // every ad on the page forever.
-  if (root.closest(X_SELECTORS.promoted) !== null || root.querySelector(X_SELECTORS.promoted) !== null) {
-    return { status: 'skip', reason: 'promoted' };
-  }
+function isPromoted(root: Element): boolean {
+  return (
+    root.closest(X_SELECTORS.promoted) !== null || root.querySelector(X_SELECTORS.promoted) !== null
+  );
+}
 
+export function extractTweet(root: Element, context: ExtractContext): ExtractOutcome {
   const quotes = quoteSubtrees(root);
   const anchor = findIdentityAnchor(root, quotes);
+
+  // Genuine ads carry no timestamped permalink, so they are skipped by marker
+  // rather than by failure — that is what stops the 2s watchdog re-testing
+  // every ad on the page forever. The marker alone is not enough, though: on
+  // real X (2026-09-29) placementTracking also sits on ordinary, unlabelled
+  // posts, and skipping those made them impossible to save. A real permalink
+  // therefore wins over the marker.
+  if (anchor === null && isPromoted(root)) {
+    return { status: 'skip', reason: 'promoted' };
+  }
 
   let username: string;
   let tweetId: string;

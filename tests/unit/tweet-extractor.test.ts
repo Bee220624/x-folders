@@ -214,4 +214,22 @@ describe('TweetExtractor against captured X DOM', () => {
     });
     expect(outcome.status).toBe('skip');
   });
+
+  it('keeps a post that carries X’s tracking marker but has a real permalink', () => {
+    // Seen on real X on 2026-09-29: X attaches placementTracking to some
+    // ordinary, unlabelled posts. Skipping on the marker alone made them
+    // impossible to save.
+    const { tweets } = loadFixture('x-home');
+    const ordinary = tweets.find(
+      (root) => extractTweet(root, { pathname: '/home', now: NOW }).status === 'ok',
+    );
+    expect(ordinary).toBeDefined();
+    const marker = document.createElement('div');
+    marker.setAttribute('data-testid', 'placementTracking');
+    ordinary?.appendChild(marker);
+
+    const outcome =
+      ordinary === undefined ? null : extractTweet(ordinary, { pathname: '/home', now: NOW });
+    expect(outcome?.status).toBe('ok');
+  });
 });
