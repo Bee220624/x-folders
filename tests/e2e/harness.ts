@@ -59,6 +59,10 @@ export const test = base.extend<{ harness: Harness }>({
         const nav = document.querySelector('header[role="banner"] nav');
         const switcher = document.querySelector('[data-testid="SideNav_AccountSwitcher_Button"]');
         if (nav === null || switcher === null) return;
+        // On real X the navigation sits inside a z-index 0 stacking context, so
+        // nothing mounted in it can rise above our page-level overlay.
+        const banner = nav.closest('header[role="banner"]');
+        if (banner instanceof HTMLElement) Object.assign(banner.style, { position: 'relative', zIndex: '0' });
         let column: Element | null = nav;
         while (column !== null && !column.contains(switcher)) column = column.parentElement;
         if (!(column instanceof HTMLElement)) return;

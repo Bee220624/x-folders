@@ -1,3 +1,4 @@
+import { createPortal } from 'preact/compat';
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import { MAX_FOLDER_DEPTH } from '@/core/constants';
 import type { FolderId, FolderTreeNode } from '@/core/domain/folder';
@@ -16,6 +17,13 @@ export interface SidebarAppProps {
   store: FolderStore;
   mode: 'wide' | 'narrow';
   onOpenFolder: (folderId: FolderId) => void;
+  /**
+   * Where the floating pieces render: the narrow panel, the context menu, the
+   * delete dialog and toasts. On X this is a page-level layer, because the
+   * navigation's own stacking context would keep them below the folder-view
+   * overlay. Omitted (the side panel page): they render in place.
+   */
+  layerRoot?: HTMLElement;
 }
 
 interface MenuState {
@@ -52,6 +60,9 @@ export function SidebarApp(props: SidebarAppProps): preact.JSX.Element {
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelPos, setPanelPos] = useState({ left: 0, top: 0 });
+
+  const float = (node: preact.ComponentChildren): preact.ComponentChildren =>
+    props.layerRoot === undefined ? node : createPortal(node, props.layerRoot);
 
   useEffect(() => {
     void props.store.refresh();
@@ -295,21 +306,22 @@ export function SidebarApp(props: SidebarAppProps): preact.JSX.Element {
         >
           <IconSpan name="folderOutline" size={26} />
         </button>
-        {panelOpen && (
-          <>
-            {/* Its own layer, below the context menu and the delete dialog: sharing
-                theirs let this one cover them and swallow their first click. */}
-            <div class="xf-narrow-layer" onClick={() => setPanelOpen(false)} />
-            <div
-              class="xf-narrow-panel"
-              style={`left:${panelPos.left}px;top:${panelPos.top}px`}
-            >
-              {header}
-              {tree}
-            </div>
-          </>
-        )}
-        {overlays}
+        {panelOpen &&
+          float(
+            <>
+              {/* Its own layer, below the context menu and the delete dialog: sharing
+                  theirs let this one cover them and swallow their first click. */}
+              <div class="xf-narrow-layer" onClick={() => setPanelOpen(false)} />
+              <div
+                class="xf-narrow-panel"
+                style={`left:${panelPos.left}px;top:${panelPos.top}px`}
+              >
+                {header}
+                {tree}
+              </div>
+            </>,
+          )}
+        {float(overlays)}
       </div>
     );
   }
@@ -318,7 +330,7 @@ export function SidebarApp(props: SidebarAppProps): preact.JSX.Element {
     <div class="xf-sidebar">
       {header}
       {tree}
-      {overlays}
+      {float(overlays)}
     </div>
   );
 }

@@ -188,3 +188,51 @@ test('the folder area never pushes the account switcher off a short window', asy
   });
   expect(layout.blockBottom).toBeLessThanOrEqual(layout.innerHeight);
 });
+
+test('with the overlay open, the narrow folder panel still shows above it', async ({ harness }) => {
+  const page = await harness.openX('/home');
+  await saveFirstPostInto(page, 'AI');
+  await page.locator('[data-xf-sidebar-host]').getByRole('button', { name: 'AI', exact: true }).click();
+  await expect(page.locator('[data-xf-overlay-host]')).toHaveCount(1);
+
+  // Narrow X's navigation so the compact entry takes over (real X does this
+  // when the side panel opens and the page gets narrow).
+  await page.evaluate(() => {
+    const nav = document.querySelector('header[role="banner"] nav');
+    const switcher = document.querySelector('[data-testid="SideNav_AccountSwitcher_Button"]');
+    let column: Element | null = nav;
+    while (column !== null && switcher !== null && !column.contains(switcher)) column = column.parentElement;
+    if (column instanceof HTMLElement) column.style.width = '88px';
+  });
+  await expect(page.locator('[data-xf-sidebar-host]')).toHaveAttribute('data-xf-mode', 'narrow', {
+    timeout: 3_000,
+  });
+  await page.locator('[data-xf-sidebar-host] .xf-narrow-button').click();
+
+  await expect(page.locator('.xf-narrow-panel')).toBeVisible();
+  // On real X (2026-09-29) the navigation lives in a z-index 0 stacking
+  // context, so a panel rendered inside it can never rise above the overlay.
+  // The fixture has no layout to reproduce the overlap, so the guarantee is
+  // checked structurally: the panel must live in a page-level layer that
+  // stacks above the overlay.
+  const placement = await page.evaluate(() => {
+    const layer = document.querySelector('[data-xf-sidebar-layer-host]');
+    const overlay = document.querySelector('[data-xf-overlay-host]');
+    return {
+      panelInNavigation:
+        document.querySelector('[data-xf-sidebar-host]')?.shadowRoot?.querySelector('.xf-narrow-panel') != null,
+      panelInLayer: layer?.shadowRoot?.querySelector('.xf-narrow-panel') != null,
+      layerIsPageLevel: layer?.parentElement === document.body,
+      layerAboveOverlay:
+        layer !== null &&
+        overlay !== null &&
+        Number(getComputedStyle(layer).zIndex) > Number(getComputedStyle(overlay).zIndex),
+    };
+  });
+  expect(placement).toEqual({
+    panelInNavigation: false,
+    panelInLayer: true,
+    layerIsPageLevel: true,
+    layerAboveOverlay: true,
+  });
+});

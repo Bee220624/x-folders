@@ -36,6 +36,7 @@ export interface MountHandle {
  */
 export class SidebarMount implements MountHandle {
   #handle: ShadowHostHandle | null = null;
+  #layer: ShadowHostHandle | null = null;
   #anchor: SidebarAnchor | null = null;
   #stopResize: (() => void) | null = null;
 
@@ -64,7 +65,8 @@ export class SidebarMount implements MountHandle {
       this.#handle !== null &&
       survivor === this.#handle.host &&
       this.#handle.host.parentElement === anchor.column &&
-      this.#handle.host.getAttribute('data-xf-mode') === anchor.mode
+      this.#handle.host.getAttribute('data-xf-mode') === anchor.mode &&
+      this.#layer?.isConnected() === true
     ) {
       this.#anchor = anchor;
       this.update();
@@ -96,11 +98,34 @@ export class SidebarMount implements MountHandle {
     if (anchor.before !== null) anchor.column.insertBefore(handle.host, anchor.before);
     else anchor.column.appendChild(handle.host);
 
+    // The floating pieces — narrow panel, context menu, delete dialog, toasts —
+    // render into a page-level layer, not in here: on real X the navigation
+    // sits in a z-index 0 stacking context, so nothing mounted inside it can
+    // rise above the folder-view overlay (seen on 2026-09-29).
+    dedupeHosts(XF_ATTR.sidebarLayerHost)?.remove();
+    const layer = createShadowHost({
+      marker: XF_ATTR.sidebarLayerHost,
+      css: `${BASE_CSS}${FEEDBACK_CSS}${SIDEBAR_CSS}`,
+      theme: this.deps.theme,
+      registry: this.deps.registry,
+    });
+    Object.assign(layer.host.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '0',
+      height: '0',
+      zIndex: '9999',
+    });
+    document.body.appendChild(layer.host);
+    this.#layer = layer;
+
     render(
       <SidebarApp
         store={this.deps.store}
         mode={anchor.mode}
         onOpenFolder={this.deps.onOpenFolder}
+        layerRoot={layer.mount}
       />,
       handle.mount,
     );
@@ -143,10 +168,13 @@ export class SidebarMount implements MountHandle {
 
   #teardownHandle(): void {
     if (this.#handle !== null) {
+      // Unmounting the app also unmounts whatever it portalled into the layer.
       render(null, this.#handle.mount);
       this.#handle.dispose();
       this.#handle = null;
     }
+    this.#layer?.dispose();
+    this.#layer = null;
     this.#stopResize?.();
     this.#stopResize = null;
   }

@@ -64,6 +64,8 @@ export const XF_ATTR = {
   tweetId: 'data-xf-tweet-id',
   skip: 'data-xf-skip',
   sidebarHost: 'data-xf-sidebar-host',
+  /** Page-level layer for the sidebar's panel, menu, dialog and toasts. */
+  sidebarLayerHost: 'data-xf-sidebar-layer-host',
   overlayHost: 'data-xf-overlay-host',
   popoverHost: 'data-xf-popover-host',
 } as const;
