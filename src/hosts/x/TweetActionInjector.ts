@@ -1,6 +1,7 @@
 import type { TweetId } from '@/core/domain/tweet';
 import { createIcon } from '@/ui/shared/icons';
 import { isolateKeyboard } from '@/ui/shared/keyboardIsolation';
+import { shadowMode } from '@/ui/shared/shadowMode';
 import { createLogger } from '@/utils/logger';
 import { findActionGroup } from './ActionGroupLocator';
 import { XF_ATTR } from './selectors';
@@ -118,7 +119,7 @@ export class TweetActionInjector {
     host.setAttribute(XF_ATTR.actionHost, '');
     host.setAttribute(XF_ATTR.tweetId, state.tweetId);
 
-    const shadow = host.attachShadow({ mode: 'closed' });
+    const shadow = host.attachShadow({ mode: shadowMode() });
     const style = document.createElement('style');
     style.textContent = BUTTON_STYLE;
     shadow.appendChild(style);

@@ -1,6 +1,7 @@
 import type { CleanupRegistry } from '@/utils/cleanup';
 import type { ThemeAdapter } from '@/hosts/x/ThemeAdapter';
 import { isolateKeyboard } from './keyboardIsolation';
+import { shadowMode } from './shadowMode';
 
 export interface ShadowHostOptions {
   /** Attribute marking the host, e.g. `data-xf-sidebar-host`. */
@@ -52,7 +53,7 @@ export function createShadowHost(options: ShadowHostOptions): ShadowHostHandle {
   const host = document.createElement('div');
   host.setAttribute(options.marker, '');
 
-  const root = host.attachShadow({ mode: 'closed' });
+  const root = host.attachShadow({ mode: shadowMode() });
   roots.set(host, root);
   const style = document.createElement('style');
   style.textContent = options.css;
