@@ -29,22 +29,19 @@ pnpm install
 pnpm build
 ```
 
-然后在 Chrome / Edge 中：
+然后在 Chrome 中：
 
-1. 打开 `chrome://extensions`
-2. 打开右上角「开发者模式」
-3. 点「加载已解压的扩展程序」
-4. 选择本仓库的 `.output/chrome-mv3` 目录
+1. 打开 `chrome://extensions`，打开右上角「开发者模式」；
+2. 点「加载已解压的扩展程序」；
+3. 在弹出的选择框里按 `⌘ + ⇧ + G`，粘贴本仓库里 `dist/chrome-mv3` 的完整路径，回车后点「选择」。
 
-打包成 ZIP：
+> 要选的是 **`dist/chrome-mv3`**，不是仓库根目录——根目录没有 `manifest.json`，Chrome 会报「清单文件缺失或不可读取」。
 
-```bash
-pnpm zip
-```
+打包成 ZIP：`pnpm zip`，产物在 `dist/` 下。
 
-产物在 `.output/` 下。
+> **数据只保存在这台电脑的这个浏览器里。** 在扩展页点「移除」会连同全部收藏一起删除。
 
-> **Node 版本**：WXT 0.21 要求 Node ≥ 22。另外 Node 25 起 corepack 不再随发行版附带，若没有 pnpm 请先 `npm i -g pnpm`。
+> **Node 版本**：WXT 0.21 要求 Node ≥ 22。若没有 pnpm，先 `npm i -g pnpm`。
 
 ---
 

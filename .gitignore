@@ -1,5 +1,8 @@
 node_modules/
 .output/
+dist/
+test-results/
+playwright-report/
 .wxt/
 stats.html
 *.log

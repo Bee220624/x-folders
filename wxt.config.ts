@@ -9,7 +9,9 @@ export default defineConfig({
   // bundler and to tsc. Splitting them is how you get a green typecheck and a
   // build that cannot resolve a single import.
   srcDir: 'src',
-  outDir: '.output',
+  // Visible on purpose. `.output/` is hidden by the macOS file picker, and
+  // "Load unpacked" on the repo root fails with "manifest missing".
+  outDir: 'dist',
   // publicDir defaults to <rootDir>/public, NOT <srcDir>/public. Leaving the
   // icons under src/ builds and zips cleanly but ships a manifest referencing
   // files that are not in the bundle, and Chrome refuses to load it.

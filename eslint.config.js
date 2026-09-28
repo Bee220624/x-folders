@@ -4,7 +4,7 @@ import tsPlugin from '@typescript-eslint/eslint-plugin';
 
 export default [
   {
-    ignores: ['node_modules/**', '.output/**', '.wxt/**', 'tests/fixtures/**', '*.config.ts'],
+    ignores: ['node_modules/**', '.output/**', 'dist/**', 'test-results/**', 'playwright-report/**', '.wxt/**', 'tests/fixtures/**', '*.config.ts'],
   },
   js.configs.recommended,
   {
