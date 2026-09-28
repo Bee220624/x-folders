@@ -127,14 +127,17 @@ export class TweetEnhancer {
     }
   }
 
-  /** Repaints buttons after a membership count changes. */
+  /**
+   * Repaints buttons after a membership count changes. Paint only: running the
+   * full `ensure()` here re-located every action bar on the page for each
+   * count reply, which is exactly the burst of work a long scroll cannot
+   * afford.
+   */
   refreshButtons(scope: ParentNode = document): void {
     for (const host of hostsIn(scope)) {
       const tweetId = host.getAttribute(XF_ATTR.tweetId);
       if (tweetId === null) continue;
-      const root = host.closest<HTMLElement>(X_SELECTORS.tweetRoot);
-      if (root === null) continue;
-      this.injector.ensure(root, { tweetId, savedCount: this.counts.countFor(tweetId) });
+      this.injector.repaint(host, this.counts.countFor(tweetId));
     }
   }
 

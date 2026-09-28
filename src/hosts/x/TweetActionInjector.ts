@@ -114,6 +114,19 @@ export class TweetActionInjector {
     return { host, created: true };
   }
 
+  /**
+   * Repaints a host this context created. No DOM lookups, so it is cheap
+   * enough to run over every button on the page after each count update.
+   * A host from an earlier context (not in the WeakMap) is left alone; the
+   * next `ensure()` for its tweet rebuilds it.
+   */
+  repaint(host: HTMLElement, savedCount: number): void {
+    if (!buttons.has(host)) return;
+    const tweetId = host.getAttribute(XF_ATTR.tweetId);
+    if (tweetId === null) return;
+    this.#applyState(host, { tweetId, savedCount });
+  }
+
   #createHost(state: ActionButtonState): HTMLElement {
     const host = document.createElement('div');
     host.setAttribute(XF_ATTR.actionHost, '');

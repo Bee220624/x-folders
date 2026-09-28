@@ -129,14 +129,30 @@ export class XRuntime {
     log.debug('runtime started');
   }
 
-  /** Idempotent; safe to call from any observer, timer or route change. */
+  /**
+   * Full pass: every mounted tweet plus the chrome around them. Runs at
+   * start-up and after route changes, when X re-renders the timeline wholesale.
+   */
   async #ensureAll(): Promise<void> {
+    if (this.#registry.disposed) return;
+    this.#ensureChrome();
+    this.#enhancer.enqueue(scanTweetRoots(document));
+  }
+
+  /**
+   * Cheap pass for the root observer: re-mount what X may have replaced and
+   * re-point the tweet stream observer. Tweets are deliberately not scanned
+   * here — X's DOM changes constantly, and re-extracting every mounted tweet
+   * after each burst is wasted work that competes with scrolling. New tweets
+   * arrive through the stream observer; a replacement primary column is
+   * scanned once, when the observer moves onto it.
+   */
+  #ensureChrome(): void {
     if (this.#registry.disposed) return;
     this.#sidebar.ensure();
     this.#folderView.ensure();
     this.#popover.ensure();
     this.#retargetTweetStream();
-    this.#enhancer.enqueue(scanTweetRoots(document));
   }
 
   #observeRoot(): void {
@@ -149,7 +165,7 @@ export class XRuntime {
       this.#rootDebounce = setTimeout(() => {
         this.#rootDebounce = null;
         this.#route.check();
-        void this.#reinitialize();
+        this.#ensureChrome();
       }, ROOT_DEBOUNCE_MS);
     });
     observer.observe(target, { childList: true, subtree: true });
@@ -182,8 +198,12 @@ export class XRuntime {
   #retargetTweetStream(): void {
     const target = document.querySelector(X_SELECTORS.primaryColumn) ?? document.body;
     if (target === this.#streamTarget || this.#streamBatcher === null) return;
+    const replaced = this.#streamTarget !== null;
     this.#streamTarget = target;
     this.#streamBatcher.observe(target, { childList: true, subtree: true });
+    // Tweets X rendered into the new column before we were watching it never
+    // produced a mutation record we could see.
+    if (replaced) this.#enhancer.enqueue(scanTweetRoots(target));
     log.debug('tweet stream observer retargeted');
   }
 

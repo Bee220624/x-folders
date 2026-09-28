@@ -201,4 +201,25 @@ describe('tweet action injection', () => {
     TweetActionInjector.removeAll(document);
     expect(document.querySelectorAll(HOST)).toHaveLength(0);
   });
+
+  it('repaints its own host without rebuilding it, and ignores hosts it did not create', () => {
+    const { tweets } = loadFixture('x-home');
+    const painter = new TweetActionInjector(() => {});
+    const result = tweets
+      .map((tweet) => painter.ensure(tweet, { tweetId: '1', savedCount: 0 }))
+      .find((candidate) => candidate !== null);
+    expect(result).toBeDefined();
+    const host = result?.host ?? null;
+    const button = TweetActionInjector.buttonFor(host);
+
+    if (host !== null) painter.repaint(host, 2);
+    expect(TweetActionInjector.buttonFor(host)).toBe(button);
+    expect(button?.getAttribute('data-saved')).toBe('true');
+    expect(button?.getAttribute('aria-label')).toBe('已保存到 2 个文件夹');
+
+    const foreign = document.createElement('div');
+    foreign.setAttribute('data-xf-action-host', '');
+    foreign.setAttribute('data-xf-tweet-id', '1');
+    expect(() => painter.repaint(foreign, 3)).not.toThrow();
+  });
 });
