@@ -48,6 +48,38 @@ export const test = base.extend<{ harness: Harness }>({
       });
     });
 
+    // The fixtures keep X's DOM but none of its CSS, so the navigation column
+    // would just grow with its content (1891px unstyled) and the sidebar budget
+    // would see no room at all. Give it X's real shape instead — a scrolling
+    // flex column filling the viewport below its top edge, with the 66px
+    // account block at the bottom (measured on real X, 2026-09-29) — before
+    // the content script mounts at document_idle.
+    await context.addInitScript(() => {
+      document.addEventListener('DOMContentLoaded', () => {
+        const nav = document.querySelector('header[role="banner"] nav');
+        const switcher = document.querySelector('[data-testid="SideNav_AccountSwitcher_Button"]');
+        if (nav === null || switcher === null) return;
+        let column: Element | null = nav;
+        while (column !== null && !column.contains(switcher)) column = column.parentElement;
+        if (!(column instanceof HTMLElement)) return;
+        const height = innerHeight - column.getBoundingClientRect().top;
+        Object.assign(column.style, {
+          height: `${height}px`,
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto',
+        });
+        for (const child of Array.from(column.children)) {
+          if (!(child instanceof HTMLElement)) continue;
+          Object.assign(child.style, {
+            flex: 'none',
+            overflow: 'hidden',
+            height: child.contains(switcher) ? '66px' : '420px',
+          });
+        }
+      });
+    });
+
     let [worker] = context.serviceWorkers();
     worker ??= await context.waitForEvent('serviceworker');
     const extensionId = new URL(worker.url()).host;

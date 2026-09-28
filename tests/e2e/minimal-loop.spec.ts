@@ -153,3 +153,38 @@ test('200 new posts all get a button without long tasks', async ({ harness }) =>
   );
   expect(longTasks.filter((task) => task.start >= burstEnd && task.duration > 50)).toEqual([]);
 });
+
+test('the folder area never pushes the account switcher off a short window', async ({ harness }) => {
+  const page = await harness.openX('/home');
+  await expect(page.locator('[data-xf-sidebar-host]')).toHaveCount(1, { timeout: 2_000 });
+  await page.setViewportSize({ width: 1400, height: 753 });
+  // Reproduce the real page of 2026-09-29: on a 753px window X's own
+  // navigation and the 66px account block left exactly 62px free.
+  await page.evaluate(() => {
+    const nav = document.querySelector('header[role="banner"] nav');
+    const switcher = document.querySelector('[data-testid="SideNav_AccountSwitcher_Button"]');
+    if (nav === null || switcher === null) throw new Error('fixture lacks the navigation');
+    let column: Element | null = nav;
+    while (column !== null && !column.contains(switcher)) column = column.parentElement;
+    if (!(column instanceof HTMLElement)) throw new Error('no shared column');
+    const height = innerHeight - column.getBoundingClientRect().top;
+    column.style.height = `${height}px`;
+    for (const child of Array.from(column.children)) {
+      if (!(child instanceof HTMLElement) || child.hasAttribute('data-xf-sidebar-host')) continue;
+      child.style.height = child.contains(switcher) ? '66px' : `${height - 66 - 62}px`;
+    }
+  });
+  await page.waitForTimeout(2_500); // a health tick re-measures and re-picks the mode
+
+  const layout = await page.evaluate(() => {
+    const switcher = document.querySelector('[data-testid="SideNav_AccountSwitcher_Button"]');
+    const column = document.querySelector('[data-xf-sidebar-host]')?.parentElement ?? null;
+    let block: Element | null = switcher;
+    while (block !== null && block.parentElement !== column) block = block.parentElement;
+    return {
+      blockBottom: block?.getBoundingClientRect().bottom ?? Number.POSITIVE_INFINITY,
+      innerHeight,
+    };
+  });
+  expect(layout.blockBottom).toBeLessThanOrEqual(layout.innerHeight);
+});

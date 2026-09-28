@@ -1,10 +1,58 @@
 import { createLogger } from '@/utils/logger';
-import { X_SELECTORS } from './selectors';
+import { X_SELECTORS, XF_ATTR } from './selectors';
 
 const log = createLogger('sidebar-locator');
 
 /** Below this the nav renders icon-only and a full tree will not fit. */
 export const NARROW_SIDEBAR_PX = 180;
+
+/**
+ * Below this much free height a full tree (header plus a row or two) cannot
+ * fit without pushing X's account switcher off screen, so the compact entry is
+ * used instead.
+ */
+export const WIDE_MIN_HEIGHT_PX = 96;
+
+/** Breathing room kept between our host and the account switcher. */
+const BUDGET_GAP_PX = 8;
+
+/**
+ * The height our host may take: whatever X's own column children leave free.
+ * There is deliberately no floor — on real X a 753px window left 62px, and the
+ * old 120px minimum pushed the account switcher off screen.
+ */
+export function sidebarBudget(columnHeight: number, otherHeights: readonly number[]): number {
+  const used = otherHeights.reduce((sum, height) => sum + height, 0);
+  return Math.max(0, columnHeight - used - BUDGET_GAP_PX);
+}
+
+export function chooseSidebarMode(width: number, budget: number): 'wide' | 'narrow' {
+  // A zero width means the layout has not settled; assume wide and let the
+  // health monitor re-evaluate rather than flipping to the compact UI on a
+  // transient measurement.
+  if (width === 0) return 'wide';
+  if (width < NARROW_SIDEBAR_PX) return 'narrow';
+  return budget < WIDE_MIN_HEIGHT_PX ? 'narrow' : 'wide';
+}
+
+/**
+ * Free height in `column` for our host, or null while the column has not been
+ * laid out. Measured from the column's own children rather than a fixed vh
+ * value: the nav's height changes as X adds or removes items.
+ */
+export function measureBudget(column: HTMLElement): number | null {
+  if (column.clientHeight === 0) return null;
+  // X's column is a fixed, viewport-tall flex column, so its own height is the
+  // room there is. A column that merely wraps its content has no such limit;
+  // then it is the viewport below its top edge that must not be overflowed.
+  const viewportRoom =
+    (column.ownerDocument.defaultView?.innerHeight ?? 0) - column.getBoundingClientRect().top;
+  const total = Math.max(column.clientHeight, viewportRoom);
+  const others = Array.from(column.children)
+    .filter((child) => !child.hasAttribute(XF_ATTR.sidebarHost))
+    .map((child) => (child as HTMLElement).offsetHeight);
+  return sidebarBudget(total, others);
+}
 
 export interface SidebarAnchor {
   /** The scrollable flex column holding the logo, nav, post button and switcher. */
@@ -74,25 +122,5 @@ export function locateSidebar(doc: Document = document): SidebarAnchor | null {
 
 function modeOf(column: HTMLElement, nav: HTMLElement): 'wide' | 'narrow' {
   const width = column.clientWidth || nav.clientWidth;
-  // A zero width means the layout has not settled; assume wide and let the
-  // health monitor re-evaluate rather than flipping to the compact UI on a
-  // transient measurement.
-  if (width === 0) return 'wide';
-  return width < NARROW_SIDEBAR_PX ? 'narrow' : 'wide';
-}
-
-/**
- * Space the tree may occupy without pushing the account switcher off screen.
- * Computed from the column's own children rather than a fixed vh value: the
- * nav's height changes as X adds or removes items.
- */
-export function availableHeight(anchor: SidebarAnchor, hostElement: Element | null): number {
-  const total = anchor.column.clientHeight;
-  if (total === 0) return 240;
-  let used = 0;
-  for (const child of Array.from(anchor.column.children)) {
-    if (child === hostElement) continue;
-    used += (child as HTMLElement).offsetHeight;
-  }
-  return Math.max(120, total - used - 8);
+  return chooseSidebarMode(width, measureBudget(column) ?? Number.POSITIVE_INFINITY);
 }

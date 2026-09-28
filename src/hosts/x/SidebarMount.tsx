@@ -7,7 +7,7 @@ import { SIDEBAR_CSS } from '@/ui/sidebar/sidebar.css';
 import { SidebarApp } from '@/ui/sidebar/SidebarApp';
 import type { FolderStore } from '@/state/FolderStore';
 import type { ThemeAdapter } from './ThemeAdapter';
-import { availableHeight, locateSidebar, type SidebarAnchor } from './SidebarLocator';
+import { locateSidebar, measureBudget, type SidebarAnchor } from './SidebarLocator';
 import { XF_ATTR } from './selectors';
 
 const log = createLogger('sidebar-mount');
@@ -89,6 +89,9 @@ export class SidebarMount implements MountHandle {
     handle.host.setAttribute('data-xf-mode', anchor.mode);
     handle.host.style.display = 'block';
     handle.host.style.width = '100%';
+    // Clips to the budget set in update(). Our panels, menus and dialogs are
+    // position: fixed, so they are not cut off by this.
+    handle.host.style.overflow = 'hidden';
 
     if (anchor.before !== null) anchor.column.insertBefore(handle.host, anchor.before);
     else anchor.column.appendChild(handle.host);
@@ -120,11 +123,22 @@ export class SidebarMount implements MountHandle {
     void handle;
   }
 
-  /** Recomputes the height budget so the account switcher stays on screen. */
+  /**
+   * Recomputes the height budget. It caps the whole host, header included, so
+   * whatever X leaves free is all we take and the account switcher can never
+   * be pushed off screen; the tree scrolls inside what is left.
+   */
   update(): void {
     if (this.#handle === null || this.#anchor === null) return;
-    const budget = availableHeight(this.#anchor, this.#handle.host);
-    this.#handle.mount.style.setProperty('--xf-sidebar-max-height', `${budget}px`);
+    const budget = measureBudget(this.#anchor.column);
+    const { host, mount } = this.#handle;
+    if (budget === null) {
+      host.style.maxHeight = '';
+      mount.style.removeProperty('--xf-sidebar-max-height');
+      return;
+    }
+    host.style.maxHeight = `${budget}px`;
+    mount.style.setProperty('--xf-sidebar-max-height', `${budget}px`);
   }
 
   #teardownHandle(): void {

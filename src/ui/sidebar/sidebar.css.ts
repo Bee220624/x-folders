@@ -1,11 +1,17 @@
 export const SIDEBAR_CSS = `
 .xf-sidebar {
-  margin: 4px 0 8px;
-  padding: 4px 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  /* The whole block, header included, fits in what X leaves free. */
+  max-height: var(--xf-sidebar-max-height, none);
+  padding: 8px 0 12px;
   border-top: 1px solid var(--xf-border);
 }
+:host([data-xf-mode="narrow"]) .xf-sidebar { padding: 2px 0; border-top: 0; }
 .xf-tree {
-  max-height: var(--xf-sidebar-max-height, 240px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
