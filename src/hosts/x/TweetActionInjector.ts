@@ -1,5 +1,6 @@
 import type { TweetId } from '@/core/domain/tweet';
 import { createIcon } from '@/ui/shared/icons';
+import { isolateKeyboard } from '@/ui/shared/keyboardIsolation';
 import { createLogger } from '@/utils/logger';
 import { findActionGroup } from './ActionGroupLocator';
 import { XF_ATTR } from './selectors';
@@ -63,11 +64,8 @@ const buttons = new WeakMap<HTMLElement, HTMLButtonElement>();
  * saved state.
  *
  * The shadow root is `closed`: the host sits in x.com's own document, and an
- * open root would let any page script walk our UI. As on the other hosts this
- * is a cost increase, not a boundary — a page script that patched
- * `Element.prototype.attachShadow` before our `document_idle` run would capture
- * these roots anyway — but it takes reading our DOM from a one-line
- * `querySelector` to a deliberate, detectable hook.
+ * open root would let any page script walk our UI. Key presses on the button
+ * are stopped at the host so X never mistakes them for its own shortcuts.
  */
 export class TweetActionInjector {
   readonly #onClick: ActionClickHandler;
@@ -142,6 +140,8 @@ export class TweetActionInjector {
     button.addEventListener('mousedown', (event) => event.stopPropagation());
 
     shadow.appendChild(button);
+    // Removed together with the host; there is nothing to unregister.
+    isolateKeyboard(host);
     // Registered before the first paint: #applyState resolves the button here.
     buttons.set(host, button);
     this.#applyState(host, state);

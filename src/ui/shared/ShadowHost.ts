@@ -1,5 +1,6 @@
 import type { CleanupRegistry } from '@/utils/cleanup';
 import type { ThemeAdapter } from '@/hosts/x/ThemeAdapter';
+import { isolateKeyboard } from './keyboardIsolation';
 
 export interface ShadowHostOptions {
   /** Attribute marking the host, e.g. `data-xf-sidebar-host`. */
@@ -38,13 +39,14 @@ const roots = new WeakMap<HTMLElement, ShadowRoot>();
  * The root is `closed` because these hosts hang in x.com's own document: with
  * `open`, any page script could read the user's entire folder tree out of
  * `document.querySelector('[data-xf-sidebar-host]').shadowRoot.textContent`,
- * and the saved-tweet authors and text out of the overlay host.
+ * and the saved-tweet authors and text out of the overlay host. Patching
+ * `Element.prototype.attachShadow` does not get around this: content scripts
+ * run in an isolated world with their own prototypes, so a page-side patch
+ * never sees our calls.
  *
- * This is not a hard boundary and should not be described as one. A page script
- * that patched `Element.prototype.attachShadow` before our `document_idle` run
- * would still capture every root we create. What it buys is cost and
- * visibility: harvesting goes from a one-line `querySelector` any script can do
- * incidentally to a deliberate, early, detectable prototype hook.
+ * Keyboard events are stopped at the host (see `isolateKeyboard`): from the
+ * page's side, a user typing into our input looks like key presses on a plain
+ * <div>, which X would run as shortcuts.
  */
 export function createShadowHost(options: ShadowHostOptions): ShadowHostHandle {
   const host = document.createElement('div');
@@ -61,9 +63,11 @@ export function createShadowHost(options: ShadowHostOptions): ShadowHostHandle {
   root.appendChild(mount);
 
   const unregisterTheme = options.theme.register(host);
+  const releaseKeyboard = isolateKeyboard(host);
   // The handle both runs the teardown and takes it off the registry, so calling
   // dispose() early and letting the registry dispose later are the same thing.
   const teardown = options.registry.add(() => {
+    releaseKeyboard();
     unregisterTheme();
     host.remove();
   });
