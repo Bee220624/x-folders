@@ -9,6 +9,7 @@ import { singleFlight } from '@/utils/singleFlight';
 import { FolderViewMount } from './FolderViewMount';
 import { HealthMonitor } from './HealthMonitor';
 import { MutationBatcher } from './MutationBatcher';
+import { listenForNavigateRequests } from './NavigateHandler';
 import { RouteObserver } from './RouteObserver';
 import { SavePopoverController } from './SavePopoverController';
 import { SidebarMount } from './SidebarMount';
@@ -123,6 +124,7 @@ export class XRuntime {
     this.#observeTweetStream();
     this.#route.start();
     this.#health.start();
+    listenForNavigateRequests(this.#registry);
 
     void this.#store.refresh();
     void this.#reinitialize();
