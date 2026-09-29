@@ -28,3 +28,9 @@ export const SCHEMA_V1 = {
   folderTweets: `[folderId+tweetId], folderId, tweetId, ${MEMBERSHIP_PAGE_INDEX}`,
   meta: 'key',
 } as const;
+
+/**
+ * Version 2 keeps every index of version 1 — the snapshot fields are row
+ * content, not keys. The bump exists for the upgrade in migrations.ts.
+ */
+export const SCHEMA_V2 = SCHEMA_V1;

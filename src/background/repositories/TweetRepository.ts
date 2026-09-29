@@ -1,3 +1,4 @@
+import { mergeSnapshot, sameSnapshot } from '@/core/domain/snapshot';
 import type { TweetId, TweetRecord } from '@/core/domain/tweet';
 import type { XFoldersDatabase } from '../db/XFoldersDatabase';
 
@@ -14,24 +15,28 @@ export class TweetRepository {
   }
 
   /**
-   * Merge, not blind overwrite. A re-save of an already stored tweet keeps the
-   * original `capturedAt`, and never replaces a known author/text with an empty
-   * one just because the DOM was half-rendered on this pass.
+   * Stores a capture folded into whatever is already there (see
+   * mergeSnapshot): a re-save can complete a snapshot but never degrade it,
+   * and the first capture time is kept.
    */
   async upsert(incoming: TweetRecord): Promise<TweetRecord> {
     const existing = await this.get(incoming.tweetId);
-    const merged: TweetRecord =
-      existing === undefined
-        ? incoming
-        : {
-            ...existing,
-            canonicalUrl: incoming.canonicalUrl,
-            username: incoming.username,
-            authorName: incoming.authorName ?? existing.authorName,
-            text: incoming.text.length > 0 ? incoming.text : existing.text,
-            capturedAt: existing.capturedAt,
-            updatedAt: incoming.updatedAt,
-          };
+    const merged = existing === undefined ? incoming : mergeSnapshot(existing, incoming);
+    await this.db.tweets.put(merged);
+    return merged;
+  }
+
+  /**
+   * Folds a later sighting into a post that is already stored. Returns the new
+   * record when something visible changed; null when the post is not stored —
+   * a sighting never creates a row — or when nothing changed, so nothing is
+   * written.
+   */
+  async refresh(incoming: TweetRecord): Promise<TweetRecord | null> {
+    const existing = await this.get(incoming.tweetId);
+    if (existing === undefined) return null;
+    const merged = mergeSnapshot(existing, incoming);
+    if (sameSnapshot(existing, merged)) return null;
     await this.db.tweets.put(merged);
     return merged;
   }

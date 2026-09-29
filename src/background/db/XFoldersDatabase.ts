@@ -2,7 +2,8 @@ import Dexie, { type EntityTable, type Table } from 'dexie';
 import { DB_NAME } from '@/core/constants';
 import type { FolderId } from '@/core/domain/folder';
 import type { TweetId } from '@/core/domain/tweet';
-import { SCHEMA_V1, type FolderRow, type MembershipRow, type MetaRow, type TweetRow } from './schema';
+import { SCHEMA_V1, SCHEMA_V2, type FolderRow, type MembershipRow, type MetaRow, type TweetRow } from './schema';
+import { upgradeToV2 } from './migrations';
 
 export class XFoldersDatabase extends Dexie {
   declare folders: EntityTable<FolderRow, 'id'>;
@@ -15,6 +16,7 @@ export class XFoldersDatabase extends Dexie {
   constructor(name: string = DB_NAME) {
     super(name);
     this.version(1).stores(SCHEMA_V1);
+    this.version(2).stores(SCHEMA_V2).upgrade(upgradeToV2);
   }
 }
 
