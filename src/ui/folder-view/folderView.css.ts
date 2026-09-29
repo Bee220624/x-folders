@@ -45,65 +45,13 @@ export const FOLDER_VIEW_CSS = `
 .xf-fv-list::-webkit-scrollbar { width: 6px; }
 .xf-fv-list::-webkit-scrollbar-thumb { background: var(--xf-border); border-radius: 3px; }
 
-.xf-fv-row {
-  display: flex;
-  align-items: flex-start;
-  border-bottom: 1px solid var(--xf-border);
-}
+.xf-fv-row { border-bottom: 1px solid var(--xf-border); }
 .xf-fv-row:hover { background: var(--xf-hover); }
-.xf-fv-card {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: block;
-  padding: 12px;
-  color: inherit;
-  text-decoration: none;
-}
-.xf-fv-meta { display: flex; align-items: baseline; gap: 6px; }
-.xf-fv-author {
-  font-size: 15px;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.xf-fv-handle {
-  font-size: 14px;
-  color: var(--xf-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.xf-fv-time {
-  margin-left: auto;
-  flex: 0 0 auto;
-  font-size: 13px;
-  color: var(--xf-text-muted);
-  white-space: nowrap;
-}
-.xf-fv-open { flex: 0 0 auto; display: inline-flex; color: var(--xf-text-muted); }
-.xf-fv-card:hover .xf-fv-open { color: var(--xf-accent); }
-.xf-fv-text {
-  margin: 4px 0 0;
-  font-size: 15px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.xf-fv-text[data-empty="true"] { color: var(--xf-text-muted); }
+.xf-fv-row[data-removing="true"] { opacity: .5; }
 
-.xf-fv-remove {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin: 10px 8px 0 0;
-  border-radius: 9999px;
-  color: var(--xf-text-muted);
-}
-.xf-fv-remove:hover:not([disabled]) { background: var(--xf-accent-soft); color: var(--xf-danger); }
-.xf-fv-remove[disabled] { opacity: .45; cursor: default; }
+/* The ⋯ menu (FolderContextMenu) floats over the list. */
+.xf-menu-layer { position: fixed; inset: 0; z-index: 6; }
+.xf-menu-anchored { position: absolute; }
 
 .xf-fv-footer {
   display: flex;

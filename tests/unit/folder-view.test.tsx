@@ -355,9 +355,15 @@ describe('folder view', () => {
     expect(textOf('.xf-fv-count')).toBe('3 条收藏');
 
     const target = records[1];
-    const button = rows()[1]?.querySelector<HTMLButtonElement>('.xf-fv-remove');
-    expect(button).not.toBeNull();
-    button?.click();
+    const more = rows()[1]?.querySelector<HTMLButtonElement>('button[aria-label="更多操作"]');
+    expect(more).not.toBeNull();
+    more?.click();
+    await settle();
+    const removeItem = Array.from(shadow().querySelectorAll<HTMLButtonElement>('[role="menuitem"]')).find(
+      (item) => item.textContent === '从此文件夹移除',
+    );
+    expect(removeItem).toBeDefined();
+    removeItem?.click();
     await settle();
 
     expect(removals).toEqual([{ folderId: FOLDER_ID, tweetId: target?.tweet.tweetId }]);
@@ -372,7 +378,7 @@ describe('folder view', () => {
     expect(listPayloads).toHaveLength(1);
   });
 
-  it('renders a same-origin link per row and drops an unsafe one', async () => {
+  it('links each row to its post and never links an unsafe one', async () => {
     records = [savedView(0), savedView(1, { url: 'https://evil.example.com/user1/status/1' })];
     folders = [folderFixture(records.length)];
     await store.refresh();
@@ -380,22 +386,21 @@ describe('folder view', () => {
 
     const safe = rows()[0];
     const unsafe = rows()[1];
-    expect(safe?.querySelector('a')?.getAttribute('href')).toBe(records[0]?.tweet.canonicalUrl);
-    expect(unsafe?.querySelector('a')).toBeNull();
+    expect(safe?.querySelector('a.xf-tc-time')?.getAttribute('href')).toBe(records[0]?.tweet.canonicalUrl);
+    expect(unsafe?.querySelector('a.xf-tc-time')).toBeNull();
     // The row still shows what was saved; it just is not a link.
     expect(unsafe?.textContent).toContain('第 1 条收藏');
   });
 
-  it('shows the author, handle and a relative saved time', async () => {
-    const savedAt = Date.now() - 3 * 86_400_000 - 1000;
-    records = [savedView(0, { savedAt })];
+  it('shows the author, handle and the day it was saved', async () => {
+    records = [savedView(0, { savedAt: new Date(2026, 8, 26, 10).getTime() })];
     folders = [folderFixture(1)];
     await store.refresh();
     await open();
 
-    expect(textOf('.xf-fv-author')).toBe('作者0');
-    expect(textOf('.xf-fv-handle')).toBe('@user0');
-    expect(textOf('.xf-fv-time')).toBe('3 天前');
+    expect(textOf('.xf-tc-name')).toBe('作者0');
+    expect(textOf('.xf-tc-handle')).toBe('@user0');
+    expect(textOf('.xf-tc-saved')).toMatch(/^保存于 (2026年)?9月26日$/);
   });
 
   it('separates the empty, loading and error states', async () => {

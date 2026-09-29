@@ -10,8 +10,8 @@ export interface SidePanelAppProps {
 }
 
 /**
- * M1 side panel: the same folder tree and folder list the page uses, stacked.
- * Clicks on a post are routed to the X tab instead of navigating the panel.
+ * The side panel: the same folder tree and folder list the page uses, stacked.
+ * Opening a post is routed to the X tab beside the panel (see openPost).
  */
 export function SidePanelApp(props: SidePanelAppProps): preact.JSX.Element {
   const [folderId, setFolderId] = useState<FolderId | null>(null);
@@ -21,7 +21,7 @@ export function SidePanelApp(props: SidePanelAppProps): preact.JSX.Element {
   }, [props.store]);
 
   return (
-    <div class="xf-root xf-sp" onClick={routePostLinks}>
+    <div class="xf-root xf-sp">
       <div class="xf-sp-tree">
         <SidebarApp store={props.store} mode="wide" onOpenFolder={setFolderId} />
       </div>
@@ -34,18 +34,10 @@ export function SidePanelApp(props: SidePanelAppProps): preact.JSX.Element {
             folderId={folderId}
             onClose={() => setFolderId(null)}
             onMembershipChanged={() => {}}
+            onOpenPost={(url, options) => void openPost(url, options)}
           />
         )}
       </div>
     </div>
   );
-}
-
-function routePostLinks(event: MouseEvent): void {
-  const target = event.target;
-  if (!(target instanceof Element)) return;
-  const anchor = target.closest('a[href]');
-  if (!(anchor instanceof HTMLAnchorElement)) return;
-  event.preventDefault();
-  void openPost(anchor.href, { newTab: event.metaKey || event.ctrlKey });
 }

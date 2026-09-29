@@ -6,8 +6,11 @@ import { FOLDER_VIEW_CSS } from '@/ui/folder-view/folderView.css';
 import { createShadowHost, type ShadowHostHandle } from '@/ui/shared/ShadowHost';
 import { BASE_CSS, FEEDBACK_CSS } from '@/ui/shared/theme.css';
 import { toasts } from '@/ui/shared/toastStore';
+import { TWEET_CARD_CSS } from '@/ui/tweet-card/tweetCard.css';
+import type { OpenOptions } from '@/ui/tweet-card/TweetCard';
 import type { CleanupRegistry } from '@/utils/cleanup';
 import { createLogger } from '@/utils/logger';
+import { isSafeXUrl } from '@/utils/url';
 import { locatePrimaryColumn } from './PrimaryColumnLocator';
 import { X_SELECTORS, XF_ATTR } from './selectors';
 import type { ThemeAdapter } from './ThemeAdapter';
@@ -101,7 +104,7 @@ export class FolderViewMount {
   #createHost(): ShadowHostHandle {
     const handle = createShadowHost({
       marker: XF_ATTR.overlayHost,
-      css: `${BASE_CSS}${FEEDBACK_CSS}${FOLDER_VIEW_CSS}`,
+      css: `${BASE_CSS}${FEEDBACK_CSS}${FOLDER_VIEW_CSS}${TWEET_CARD_CSS}`,
       theme: this.deps.theme,
       registry: this.deps.registry,
     });
@@ -133,6 +136,7 @@ export class FolderViewMount {
         onClose={() => this.close()}
         onMembershipChanged={this.deps.onMembershipChanged}
         onOpenInSidePanel={() => this.#openInSidePanel()}
+        onOpenPost={openPostHere}
       />,
       handle.mount,
     );
@@ -226,4 +230,14 @@ export class FolderViewMount {
     this.#handle.dispose();
     this.#handle = null;
   }
+}
+
+/**
+ * The page overlay opens a post in this tab, like following one of X's own
+ * links, or in a new tab on ⌘/Ctrl-click. Only x.com permalinks are followed.
+ */
+function openPostHere(url: string, options: OpenOptions): void {
+  if (!isSafeXUrl(url)) return;
+  if (options.newTab) window.open(url, '_blank', 'noopener,noreferrer');
+  else location.assign(url);
 }

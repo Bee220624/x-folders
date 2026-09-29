@@ -10,6 +10,8 @@ import type { FolderStore, FolderStoreState } from '@/state/FolderStore';
 import { createIcon } from '@/ui/shared/icons';
 import { ToastHost } from '@/ui/shared/Toast';
 import { toasts } from '@/ui/shared/toastStore';
+import { FolderContextMenu } from '@/ui/sidebar/FolderContextMenu';
+import type { OpenOptions } from '@/ui/tweet-card/TweetCard';
 import { SavedTweetCard } from './SavedTweetCard';
 
 /** How close to the bottom the reader must get before the next page is asked for. */
@@ -22,6 +24,8 @@ export interface FolderViewAppProps {
   onMembershipChanged: (tweetId: TweetId, membershipCount: number) => void;
   /** Present only on the page overlay: hands the reading over to the side panel. */
   onOpenInSidePanel?: () => void;
+  /** Opens a post from a card: the page navigates itself, the side panel asks the X tab. */
+  onOpenPost: (url: string, options: OpenOptions) => void;
 }
 
 type ListStatus = 'loading' | 'ready' | 'error';
@@ -61,6 +65,7 @@ export function FolderViewApp(props: FolderViewAppProps): preact.JSX.Element {
   const [exhausted, setExhausted] = useState(false);
   const [removing, setRemoving] = useState<TweetId | null>(null);
   const [count, setCount] = useState<number>(storeCount ?? 0);
+  const [menu, setMenu] = useState<{ tweetId: TweetId; x: number; y: number } | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<FolderTweetsCursor | null>(null);
@@ -132,6 +137,7 @@ export function FolderViewApp(props: FolderViewAppProps): preact.JSX.Element {
     setLoadingMore(false);
     setExhausted(false);
     setRemoving(null);
+    setMenu(null);
     void loadPage(true);
     return () => {
       generation.current += 1;
@@ -208,7 +214,8 @@ export function FolderViewApp(props: FolderViewAppProps): preact.JSX.Element {
             item={item}
             now={now}
             removing={removing === item.tweet.tweetId}
-            onRemove={(tweetId) => void remove(tweetId)}
+            onOpen={props.onOpenPost}
+            onMenu={(tweetId, x, y) => setMenu({ tweetId, x, y })}
           />
         ))}
         {loadingMore && <div class="xf-fv-footer">载入中…</div>}
@@ -233,6 +240,8 @@ export function FolderViewApp(props: FolderViewAppProps): preact.JSX.Element {
       </>
     );
   }
+
+  const menuTarget = menu === null ? undefined : items.find((item) => item.tweet.tweetId === menu.tweetId);
 
   return (
     <div class="xf-fv">
@@ -269,6 +278,22 @@ export function FolderViewApp(props: FolderViewAppProps): preact.JSX.Element {
         {body}
       </div>
 
+      {menu !== null && menuTarget !== undefined && (
+        <FolderContextMenu
+          items={[
+            { id: 'open', label: '在新标签页打开', icon: 'external' },
+            { id: 'remove', label: '从此文件夹移除', icon: 'trash', danger: true, disabled: removing !== null },
+          ]}
+          x={menu.x}
+          y={menu.y}
+          onSelect={(action) => {
+            setMenu(null);
+            if (action === 'open') props.onOpenPost(menuTarget.tweet.canonicalUrl, { newTab: true });
+            if (action === 'remove') void remove(menuTarget.tweet.tweetId);
+          }}
+          onClose={() => setMenu(null)}
+        />
+      )}
       <ToastHost />
     </div>
   );

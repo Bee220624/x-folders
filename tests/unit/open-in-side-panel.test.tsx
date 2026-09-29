@@ -35,6 +35,7 @@ describe('the overlay’s side panel button', () => {
         folderId="f1"
         onClose={() => {}}
         onMembershipChanged={() => {}}
+        onOpenPost={() => {}}
         onOpenInSidePanel={onOpenInSidePanel}
       />,
       container,
@@ -53,6 +54,7 @@ describe('the overlay’s side panel button', () => {
         folderId="f1"
         onClose={() => {}}
         onMembershipChanged={() => {}}
+        onOpenPost={() => {}}
       />,
       container,
     );

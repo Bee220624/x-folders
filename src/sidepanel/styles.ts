@@ -2,6 +2,7 @@ import { tokensFor } from '@/hosts/x/ThemeAdapter';
 import { FOLDER_VIEW_CSS } from '@/ui/folder-view/folderView.css';
 import { BASE_CSS, FEEDBACK_CSS } from '@/ui/shared/theme.css';
 import { SIDEBAR_CSS } from '@/ui/sidebar/sidebar.css';
+import { TWEET_CARD_CSS } from '@/ui/tweet-card/tweetCard.css';
 
 /**
  * The side panel is an ordinary extension page, so the CSS strings the shadow
@@ -13,7 +14,7 @@ import { SIDEBAR_CSS } from '@/ui/sidebar/sidebar.css';
  */
 export function mountSidePanelStyles(doc: Document): void {
   const style = doc.createElement('style');
-  style.textContent = `${BASE_CSS}${FEEDBACK_CSS}${SIDEBAR_CSS}${FOLDER_VIEW_CSS}
+  style.textContent = `${BASE_CSS}${FEEDBACK_CSS}${SIDEBAR_CSS}${FOLDER_VIEW_CSS}${TWEET_CARD_CSS}
 html, body { margin: 0; height: 100%; background: var(--xf-bg); }
 #app { height: 100%; }
 .xf-sp { display: flex; flex-direction: column; height: 100%; }
