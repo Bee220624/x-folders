@@ -68,6 +68,8 @@ const RETRYABLE_ERRORS = new Set(['RPC_TIMEOUT', 'RPC_UNAVAILABLE']);
  *   - every read;
  *   - saveTweet, whose membership has a compound primary key and whose savedAt
  *     is never rewritten;
+ *   - tweets.refresh, which only ever completes a snapshot, so applying it
+ *     twice is the same as applying it once;
  *   - rename and setCollapsed, which are no-ops when the value already matches.
  *
  * Deliberately absent: create (a retry hits the duplicate-name check and tells
@@ -85,6 +87,7 @@ const RETRYABLE_METHODS: ReadonlySet<RpcMethod> = new Set<RpcMethod>([
   'memberships.getCountsForTweets',
   'memberships.listFolderTweets',
   'memberships.saveTweet',
+  'tweets.refresh',
   'meta.getRecentFolders',
 ]);
 

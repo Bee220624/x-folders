@@ -6,6 +6,7 @@ import type {
   CreateFolderPayload,
   FolderIdPayload,
   ListFolderTweetsPayload,
+  RefreshTweetsPayload,
   RemoveTweetPayload,
   RenameFolderPayload,
   SaveTweetPayload,
@@ -63,6 +64,8 @@ export function createHandlers(): RpcHandlers {
     },
     'memberships.listFolderTweets': async (payload) =>
       tweetService().listFolderTweets(payload as ListFolderTweetsPayload),
+    'tweets.refresh': async (payload) =>
+      tweetService().refresh((payload as RefreshTweetsPayload).tweets),
 
     'meta.getRecentFolders': async () => tweetService().recentFolderIds(),
   };

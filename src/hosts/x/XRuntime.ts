@@ -13,6 +13,7 @@ import { listenForNavigateRequests } from './NavigateHandler';
 import { RouteObserver } from './RouteObserver';
 import { SavePopoverController } from './SavePopoverController';
 import { SidebarMount } from './SidebarMount';
+import { SnapshotRefresher } from './SnapshotRefresher';
 import { ThemeAdapter } from './ThemeAdapter';
 import { TweetActionInjector } from './TweetActionInjector';
 import { collectTweetRoots, scanTweetRoots } from './TweetDetector';
@@ -41,6 +42,7 @@ export class XRuntime {
   readonly #theme = new ThemeAdapter();
   readonly #store = new FolderStore();
   readonly #counts = new VisibleTweetStore();
+  readonly #refresher = new SnapshotRefresher();
 
   readonly #injector: TweetActionInjector;
   readonly #enhancer: TweetEnhancer;
@@ -61,7 +63,9 @@ export class XRuntime {
     this.#injector = new TweetActionInjector((tweetId, anchor) => {
       this.#popover.open(tweetId, anchor);
     });
-    this.#enhancer = new TweetEnhancer(this.#injector, this.#counts, this.#registry);
+    this.#enhancer = new TweetEnhancer(this.#injector, this.#counts, this.#registry, (record) =>
+      this.#refresher.offer(record),
+    );
 
     this.#sidebar = new SidebarMount({
       store: this.#store,
@@ -74,7 +78,7 @@ export class XRuntime {
       store: this.#store,
       theme: this.#theme,
       registry: this.#registry,
-      resolveTweet: (tweetId) => this.#enhancer.recordFor(tweetId),
+      resolveTweet: (tweetId, anchor) => this.#enhancer.freshRecord(tweetId, anchor),
       onMembershipChanged: (tweetId, count) => this.#applyCount(tweetId, count),
     });
 
@@ -116,8 +120,17 @@ export class XRuntime {
     this.#theme.attach(this.#registry);
     this.#store.attach(this.#registry);
     this.#counts.attach(this.#registry);
+    this.#refresher.attach(this.#registry);
 
-    this.#counts.subscribe(() => this.#enhancer.refreshButtons());
+    this.#counts.subscribe((counts) => {
+      this.#enhancer.refreshButtons();
+      // Saved posts on screen: fold what the page shows now into their snapshots.
+      for (const [tweetId, count] of counts) {
+        if (count === 0) continue;
+        const record = this.#enhancer.recordFor(tweetId);
+        if (record !== null) this.#refresher.offer(record);
+      }
+    });
     this.#registry.add(() => toasts.reset());
 
     this.#observeRoot();

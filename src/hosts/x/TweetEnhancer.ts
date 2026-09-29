@@ -40,6 +40,8 @@ export class TweetEnhancer {
     private readonly injector: TweetActionInjector,
     private readonly counts: VisibleTweetStore,
     registry: CleanupRegistry,
+    /** Receives every capture of a post already known to be saved. */
+    private readonly onSavedSighting: (record: TweetRecord) => void = () => {},
   ) {
     registry.add(() => {
       if (this.#handle !== null) cancelIdle(this.#handle);
@@ -52,6 +54,23 @@ export class TweetEnhancer {
   /** The most recent record extracted for a tweet, for the save popover. */
   recordFor(tweetId: TweetId): TweetRecord | null {
     return this.#records.get(tweetId) ?? null;
+  }
+
+  /**
+   * The capture to save. Re-reads the post from the page first: the capture
+   * taken when it scrolled in may predate its lazily loaded avatar and
+   * pictures, and what is saved is what the folder view will show.
+   */
+  freshRecord(tweetId: TweetId, anchor: HTMLElement): TweetRecord | null {
+    const root = anchor.closest<HTMLElement>(X_SELECTORS.tweetRoot);
+    if (root !== null) {
+      const outcome = extractTweet(root, { pathname: location.pathname, now: Date.now() });
+      if (outcome.status === 'ok' && outcome.record.tweetId === tweetId) {
+        this.#records.set(tweetId, outcome.record);
+        return outcome.record;
+      }
+    }
+    return this.recordFor(tweetId);
   }
 
   enqueue(roots: Iterable<HTMLElement>): void {
@@ -94,10 +113,9 @@ export class TweetEnhancer {
       const { record } = outcome;
       this.#records.set(record.tweetId, record);
       seen.push(record.tweetId);
-      this.injector.ensure(root, {
-        tweetId: record.tweetId,
-        savedCount: this.counts.countFor(record.tweetId),
-      });
+      const savedCount = this.counts.countFor(record.tweetId);
+      this.injector.ensure(root, { tweetId: record.tweetId, savedCount });
+      if (savedCount > 0) this.onSavedSighting(record);
 
       if (Date.now() - started > budgetMs) break;
     }

@@ -1,6 +1,7 @@
 import {
   FOLDER_TWEETS_PAGE_SIZE,
   MEMBERSHIP_COUNT_BATCH_MAX,
+  SNAPSHOT_REFRESH_BATCH_MAX,
 } from '@/core/constants';
 import { DomainError } from '@/core/errors/DomainError';
 import type {
@@ -8,6 +9,7 @@ import type {
   FolderIdPayload,
   ListFolderTweetsPayload,
   PayloadOf,
+  RefreshTweetsPayload,
   RemoveTweetPayload,
   RenameFolderPayload,
   RpcMethod,
@@ -146,6 +148,14 @@ const VALIDATORS: Record<RpcMethod, Validator> = {
         tweetId: asTweetId(cursor.tweetId, 'cursor.tweetId'),
       },
     };
+  },
+
+  'tweets.refresh': (payload): RefreshTweetsPayload => {
+    const raw = asRecord(payload, 'payload');
+    if (!Array.isArray(raw.tweets)) bad('tweets');
+    if (raw.tweets.length > SNAPSHOT_REFRESH_BATCH_MAX) bad('tweets 超过单批上限');
+    const now = Date.now();
+    return { tweets: raw.tweets.map((tweet) => sanitizeSnapshot(tweet, now)) };
   },
 };
 

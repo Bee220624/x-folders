@@ -6,6 +6,7 @@ import type {
   ListFolderTweetsPayload,
   ListFolderTweetsResult,
   MembershipCounts,
+  RefreshTweetsResult,
   RemoveTweetResult,
   SaveTweetResult,
 } from '@/messaging/protocol';
@@ -99,6 +100,24 @@ export class TweetSaveService {
       affectedTweetIds: [tweetId],
     });
     return result;
+  }
+
+  /**
+   * Folds later sightings into posts that are already saved (work order 2.4: a
+   * long post cut short on the timeline is completed once its full text has
+   * been seen). Never creates a row — an unsaved post stays unsaved — and only
+   * broadcasts when a stored snapshot actually changed.
+   */
+  async refresh(incoming: readonly TweetRecord[]): Promise<RefreshTweetsResult> {
+    const updated = await this.db.transaction('rw', this.db.tweets, async (): Promise<TweetId[]> => {
+      const changed: TweetId[] = [];
+      for (const record of incoming) {
+        if ((await this.tweets.refresh(record)) !== null) changed.push(record.tweetId);
+      }
+      return changed;
+    });
+    if (updated.length > 0) await broadcast({ affectedTweetIds: updated });
+    return { updated };
   }
 
   async folderIdsForTweet(tweetId: TweetId): Promise<FolderId[]> {

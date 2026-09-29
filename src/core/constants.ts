@@ -25,6 +25,9 @@ export const RECENT_FOLDERS_MAX = 3;
 /** Largest batch accepted by `memberships.getCountsForTweets`. */
 export const MEMBERSHIP_COUNT_BATCH_MAX = 100;
 
+/** Largest batch accepted by `tweets.refresh`; one snapshot can be a few kilobytes. */
+export const SNAPSHOT_REFRESH_BATCH_MAX = 20;
+
 /** `chrome.storage.local` key carrying the cross-tab change record. */
 export const CHANGE_CHANNEL_KEY = 'xf:change';
 

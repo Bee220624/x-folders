@@ -46,6 +46,10 @@ export interface RemoveTweetPayload {
   tweetId: TweetId;
 }
 
+export interface RefreshTweetsPayload {
+  tweets: TweetRecord[];
+}
+
 export interface ListFolderTweetsPayload {
   folderId: FolderId;
   /** Clamped server-side to FOLDER_TWEETS_PAGE_SIZE. */
@@ -73,6 +77,11 @@ export interface RemoveTweetResult {
   membershipCount: number;
   /** True when the tweet lost its last membership and its metadata was GC'd. */
   tweetDeleted: boolean;
+}
+
+export interface RefreshTweetsResult {
+  /** Posts whose stored snapshot actually changed. */
+  updated: TweetId[];
 }
 
 export interface DeleteFolderResult {
@@ -120,6 +129,7 @@ export interface RpcMethods {
     payload: ListFolderTweetsPayload;
     result: ListFolderTweetsResult;
   };
+  'tweets.refresh': { payload: RefreshTweetsPayload; result: RefreshTweetsResult };
 
   'meta.getRecentFolders': { payload: undefined; result: FolderId[] };
 }
@@ -143,6 +153,7 @@ export const RPC_METHODS = [
   'memberships.saveTweet',
   'memberships.removeTweet',
   'memberships.listFolderTweets',
+  'tweets.refresh',
   'meta.getRecentFolders',
 ] as const satisfies readonly RpcMethod[];
 

@@ -5,6 +5,7 @@ import { VisibleTweetStore } from '@/state/VisibleTweetStore';
 import { CleanupRegistry } from '@/utils/cleanup';
 import { XF_ATTR, X_SELECTORS } from '@/hosts/x/selectors';
 import { loadFixture } from '../helpers/fixtures';
+import { mountPost, postHtml } from '../helpers/postDom';
 
 function makeEnhancer(): {
   enhancer: TweetEnhancer;
@@ -175,5 +176,38 @@ describe('TweetEnhancer', () => {
     expect(enhancer.pending).toBeGreaterThan(0);
     registry.dispose();
     expect(enhancer.pending).toBe(0);
+  });
+
+  it('re-reads a post when it is saved, keeping pictures that loaded late', () => {
+    const { enhancer } = makeEnhancer();
+    const root = mountPost(postHtml({ avatar: null }));
+    enhancer.enqueue([root]);
+    enhancer.drain(1_000);
+    expect(enhancer.recordFor('1234567890')?.avatarUrl).toBeNull();
+
+    const late = document.createElement('img');
+    late.src = 'https://pbs.twimg.com/profile_images/1/alice_normal.jpg';
+    root.querySelector(X_SELECTORS.avatar)?.appendChild(late);
+    const host = root.querySelector<HTMLElement>(`[${XF_ATTR.actionHost}]`);
+    expect(host).not.toBeNull();
+    if (host === null) return;
+    expect(enhancer.freshRecord('1234567890', host)?.avatarUrl).toBe(late.src);
+    expect(enhancer.recordFor('1234567890')?.avatarUrl).toBe(late.src);
+  });
+
+  it('hands each capture of a post known to be saved to the refresher', () => {
+    const registry = new CleanupRegistry();
+    const counts = new VisibleTweetStore();
+    counts.attach(registry);
+    counts.setLocal('1234567890', 1);
+    const sightings: string[] = [];
+    const enhancer = new TweetEnhancer(new TweetActionInjector(() => {}), counts, registry, (record) => {
+      sightings.push(record.tweetId);
+    });
+    enhancer.enqueue([mountPost(postHtml())]);
+    enhancer.drain(1_000);
+    enhancer.enqueue([mountPost(postHtml({ id: '999', user: 'other' }))]);
+    enhancer.drain(1_000);
+    expect(sightings).toEqual(['1234567890']);
   });
 });
