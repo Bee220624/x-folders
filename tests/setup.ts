@@ -3,8 +3,9 @@ import { vi } from 'vitest';
 
 /**
  * Minimal `chrome` stub. The extension only touches `storage.local`,
- * `storage.onChanged` and `runtime.sendMessage`; anything else is intentionally
- * absent so an accidental new API dependency fails loudly in tests.
+ * `storage.onChanged`, `runtime.sendMessage` and `runtime.getManifest`; anything
+ * else is intentionally absent so an accidental new API dependency fails loudly
+ * in tests.
  */
 interface StoredListener {
   (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string): void;
@@ -17,6 +18,7 @@ const chromeStub = {
   runtime: {
     lastError: undefined as { message: string } | undefined,
     sendMessage: vi.fn(),
+    getManifest: vi.fn(() => ({ manifest_version: 3, name: 'X Folders (test)', version: '0.0.0-test' })),
     onMessage: {
       addListener: vi.fn(),
       removeListener: vi.fn(),

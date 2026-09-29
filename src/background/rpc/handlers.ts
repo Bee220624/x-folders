@@ -24,7 +24,8 @@ export function createHandlers(): RpcHandlers {
   const tweetService = (): TweetSaveService => new TweetSaveService(getDatabase());
 
   return {
-    'health.ping': async () => ({ ok: true as const, version: '0.1.0' }),
+    // Read from the built manifest, which WXT fills in from package.json.
+    'health.ping': async () => ({ ok: true as const, version: chrome.runtime.getManifest().version }),
 
     'folders.list': async () => folderService().snapshot(),
     'folders.create': async (payload) => {
