@@ -1,9 +1,12 @@
-import { TWEET_TEXT_MAX } from '@/core/constants';
-import { upgradeV1Row } from '@/core/domain/snapshot';
+import { segmentsToText } from '@/core/domain/snapshot';
 import type { TweetRecord } from '@/core/domain/tweet';
-import { findWhere, isInsideAny, readVisibleText } from '@/utils/dom';
-import { trimTweetText } from '@/utils/text';
+import { findWhere, isInsideAny } from '@/utils/dom';
 import { parseStatusUrl } from '@/utils/url';
+import { readAuthor } from './extractAuthor';
+import { readCard, readMedia } from './extractMedia';
+import { readTime } from './extractPicture';
+import { readQuote } from './extractQuote';
+import { readSegments } from './extractText';
 import { X_SELECTORS } from './selectors';
 
 /**
@@ -60,48 +63,9 @@ export function findIdentityAnchor(root: Element, quotes: readonly Element[]): H
     root,
     X_SELECTORS.statusLink,
     (candidate) =>
-      !isInsideAny(candidate, quotes) && candidate.querySelector('time') !== null,
+      !isInsideAny(candidate, quotes) && candidate.querySelector(X_SELECTORS.time) !== null,
   );
   return anchor instanceof HTMLAnchorElement ? anchor : null;
-}
-
-function outerText(root: Element, quotes: readonly Element[]): string {
-  // The FIRST outer tweetText, never a concatenation: a quote tweet with no
-  // commentary of its own must yield an empty string, not the quoted author's
-  // words attributed to the outer tweet.
-  const node = findWhere(
-    root,
-    X_SELECTORS.tweetText,
-    (candidate) => !isInsideAny(candidate, quotes),
-  );
-  if (node === null) return '';
-  return trimTweetText(readVisibleText(node), TWEET_TEXT_MAX);
-}
-
-function outerAuthorName(
-  root: Element,
-  quotes: readonly Element[],
-  username: string,
-): string | null {
-  const userName = findWhere(
-    root,
-    X_SELECTORS.userName,
-    (candidate) => !isInsideAny(candidate, quotes),
-  );
-  if (userName === null) return null;
-
-  // The display name is the first text run that is neither the @handle, the
-  // "·" separator, nor the timestamp.
-  for (const span of Array.from(userName.querySelectorAll('span'))) {
-    if (span.querySelector('span') !== null) continue;
-    const text = readVisibleText(span).trim();
-    if (text.length === 0) continue;
-    if (text.startsWith('@')) continue;
-    if (text === '·') continue;
-    if (span.closest('time') !== null) continue;
-    return text.slice(0, 128);
-  }
-  return username;
 }
 
 function isPromoted(root: Element): boolean {
@@ -156,16 +120,29 @@ export function extractTweet(root: Element, context: ExtractContext): ExtractOut
     }
   }
 
-  return {
-    status: 'ok',
-    record: upgradeV1Row({
-      tweetId,
-      canonicalUrl,
-      username,
-      authorName: outerAuthorName(root, quotes, username),
-      text: outerText(root, quotes),
-      capturedAt: context.now,
-      updatedAt: context.now,
-    }),
+  const author = readAuthor(root, quotes);
+  const textRoot = findWhere(root, X_SELECTORS.tweetText, (candidate) => !isInsideAny(candidate, quotes));
+  // The FIRST outer tweetText, never a concatenation: a quote tweet with no
+  // commentary of its own must yield empty text, not the quoted author's words.
+  const segments = textRoot === null ? [] : readSegments(textRoot);
+  const quoteRoot = quotes[0];
+  const record: TweetRecord = {
+    tweetId,
+    canonicalUrl,
+    username,
+    // As in v0.1: a rendered header without a readable name shows the handle.
+    authorName: author.authorName ?? (author.hasHeader ? username : null),
+    avatarUrl: author.avatarUrl,
+    verified: author.verified,
+    postedAt: readTime(anchor?.querySelector(X_SELECTORS.time) ?? null),
+    text: segmentsToText(segments),
+    segments,
+    media: readMedia(root, quotes),
+    quote: quoteRoot === undefined ? null : readQuote(quoteRoot),
+    card: readCard(root, quotes),
+    truncated: findWhere(root, X_SELECTORS.showMore, (candidate) => !isInsideAny(candidate, quotes)) !== null,
+    capturedAt: context.now,
+    updatedAt: context.now,
   };
+  return { status: 'ok', record };
 }
