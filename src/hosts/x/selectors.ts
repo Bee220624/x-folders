@@ -10,6 +10,7 @@
  *     paths, never localisable `aria-label` text.
  *
  * Verified against real x.com DOM captured 2026-09-03 (see tests/fixtures).
+ * Measured again on 2026-09-29 for snapshots (see the M2 plan).
  * Notes on things that are NOT what you would expect:
  *  - There is no `[data-testid="AppTabBar"]` container; only per-item
  *    `AppTabBar_*_Link` anchors exist.
@@ -42,6 +43,26 @@ export const X_SELECTORS = {
   promoted: '[data-testid="placementTracking"]',
   socialContext: '[data-testid="socialContext"]',
   card: '[data-testid="card.wrapper"]',
+  /** Author avatar block; inside a quote it belongs to the quoted author. */
+  avatar: '[data-testid="Tweet-User-Avatar"]',
+  /** Blue, gold and grey checks all use this id; it sits inside User-Name. */
+  verifiedBadge: '[data-testid="icon-verified"]',
+  /**
+   * The timeline's cut of a long post. A sibling of tweetText, not inside it;
+   * a post's own page shows the full text and has none.
+   */
+  showMore: '[data-testid="tweet-text-show-more-link"]',
+  /** One picture or video cell; a video nests videoPlayer > videoComponent > video in it. */
+  mediaCell: '[data-testid="tweetPhoto"]',
+  cardSmallMedia: '[data-testid="card.layoutSmall.media"]',
+  video: 'video',
+  time: 'time',
+  /** Leaf text runs inside User-Name and cards. */
+  textRun: 'span',
+  image: 'img[src]',
+  /** X paints avatars and posters a second time as a CSS background. */
+  backgroundImage: '[style*="background-image"]',
+  anyLink: 'a[href]',
 
   actionGroup: 'div[role="group"]',
   reply: '[data-testid="reply"]',
