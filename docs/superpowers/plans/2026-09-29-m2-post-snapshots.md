@@ -2073,8 +2073,8 @@ import { readVisibleText } from '@/utils/dom';
 const X_HOSTS: ReadonlySet<string> = new Set(['x.com', 'www.x.com', 'twitter.com', 'www.twitter.com', 'mobile.twitter.com']);
 const PROFILE_PATH = /^\/([A-Za-z0-9_]{1,15})$/;
 const HASHTAG_PATH = /^\/hashtag\/([^/]+)$/;
-const LEADING_SPACE = /^[\s﻿ ]+/;
-const TRAILING_SPACE = /[\s﻿ ]+$/;
+const LEADING_SPACE = /^[\s\uFEFF\u00A0]+/;
+const TRAILING_SPACE = /[\s\uFEFF\u00A0]+$/;
 
 function safeDecode(value: string): string {
   try {
