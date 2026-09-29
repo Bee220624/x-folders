@@ -11,7 +11,8 @@
  *     background picture) and data-* (but data-testid) are dropped;
  *   - links, pictures, test ids and times become synthetic values, consistent
  *     within one run, so a post keeps its id across the pages captured;
- *   - script, style, iframe and similar elements are removed.
+ *   - script, style, iframe and similar elements are removed, and so is
+ *     everything the extension itself mounted on the page.
  *
  * window.__xfCapture:
  *   sanitize(node)          a sanitised deep clone
@@ -35,6 +36,8 @@ window.__xfCapture = (() => {
   const BASE_TIME = Date.UTC(2026, 0, 1);
   const HOUR_MS = 3600000;
   const QUOTE = 'div[role="link"][tabindex="0"]';
+  /** The extension's own mounts (buttons, sidebar, overlay, popover) are not part of X's page. */
+  const OWN_HOST = /^data-xf-.*-host$/;
 
   const X_HOSTS = new Set(['x.com', 'www.x.com', 'twitter.com', 'www.twitter.com', 'mobile.twitter.com']);
   const KEEP_ATTRS = new Set([
@@ -226,6 +229,10 @@ window.__xfCapture = (() => {
   function sanitizeInPlace(root) {
     const walk = (el, inText) => {
       if (DROP_TAGS.has(el.tagName.toUpperCase())) {
+        el.remove();
+        return;
+      }
+      if (Array.from(el.attributes).some((attribute) => OWN_HOST.test(attribute.name))) {
         el.remove();
         return;
       }

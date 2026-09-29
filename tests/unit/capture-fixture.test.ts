@@ -103,4 +103,26 @@ describe('tools/capture-fixture.js', () => {
     const photoLink = doc.querySelector('[data-testid="tweetPhoto"] a')?.getAttribute('href') ?? '';
     expect(photoLink.startsWith(`${permalink}/photo/`)).toBe(true);
   });
+
+  it('leaves out what the extension itself mounted on the page', () => {
+    const withExtension = REAL_POST.replace(
+      '<div role="group">',
+      '<div role="group"><div data-xf-action-host="" data-xf-tweet-id="1839990000000000123"></div>',
+    ).replace('<article data-testid="tweet"', '<article data-xf-skip="promoted" data-testid="tweet"');
+    document.body.innerHTML =
+      '<header role="banner"><nav><div data-xf-sidebar-host=""><span>我的收藏</span></div></nav></header>' +
+      '<main><div data-testid="primaryColumn"><section><div>' +
+      `<div data-testid="cellInnerDiv">${withExtension}</div>` +
+      '</div></section></div></main>';
+    capture.reset();
+    capture.grab();
+    const out = capture.html();
+    const doc = new DOMParser().parseFromString(out, 'text/html');
+    expect(out).not.toContain('data-xf-');
+    expect(doc.querySelector('header nav')?.children).toHaveLength(0);
+    expect(doc.querySelector('[role="group"]')?.children).toHaveLength(3);
+    // X's own post stays, only our marker attribute is gone.
+    expect(doc.querySelector('article[data-testid="tweet"]')).not.toBeNull();
+    expect(findLeaks(out)).toEqual([]);
+  });
 });
