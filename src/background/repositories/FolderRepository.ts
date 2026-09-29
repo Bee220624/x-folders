@@ -136,12 +136,29 @@ export class FolderRepository {
     return updates;
   }
 
-  /** The folder plus every descendant, self first. */
+  /**
+   * The folder plus every descendant at any depth, self first (review defect 4).
+   * A corrupted parent cycle cannot loop: each id is taken once.
+   */
   async subtreeIds(folderId: FolderId): Promise<FolderId[]> {
     const all = await this.listAll();
-    const ids = [folderId];
+    const childrenOf = new Map<FolderId, FolderId[]>();
     for (const folder of all) {
-      if (folder.parentId === folderId) ids.push(folder.id);
+      if (folder.parentId === null) continue;
+      const siblings = childrenOf.get(folder.parentId);
+      if (siblings === undefined) childrenOf.set(folder.parentId, [folder.id]);
+      else siblings.push(folder.id);
+    }
+
+    const ids: FolderId[] = [];
+    const seen = new Set<FolderId>();
+    const queue: FolderId[] = [folderId];
+    for (let index = 0; index < queue.length; index += 1) {
+      const id = queue[index];
+      if (id === undefined || seen.has(id)) continue;
+      seen.add(id);
+      ids.push(id);
+      queue.push(...(childrenOf.get(id) ?? []));
     }
     return ids;
   }

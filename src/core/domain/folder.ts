@@ -28,6 +28,11 @@ export interface FolderWithCount extends Folder {
  * Builds the sibling-ordered tree. Folders whose `parentId` points at a missing
  * folder are treated as roots rather than dropped, so a partially corrupted
  * table still renders instead of silently losing rows.
+ *
+ * Depth comes from walking down from the roots, not from "has a parent": the
+ * tree is not hard-wired to two levels (review defect 4). A parent cycle —
+ * possible only in a corrupted table — has no path from any root, so its
+ * members would vanish; the cycle is cut and they become roots, like orphans.
  */
 export function buildFolderTree(folders: readonly FolderWithCount[]): FolderTreeNode[] {
   const byId = new Map<FolderId, FolderTreeNode>();
@@ -38,20 +43,32 @@ export function buildFolderTree(folders: readonly FolderWithCount[]): FolderTree
   const roots: FolderTreeNode[] = [];
   for (const node of byId.values()) {
     const parent = node.parentId === null ? undefined : byId.get(node.parentId);
-    if (parent === undefined) {
-      node.depth = 0;
-      roots.push(node);
-    } else {
-      node.depth = 1;
-      parent.children.push(node);
-    }
+    if (parent === undefined) roots.push(node);
+    else parent.children.push(node);
   }
 
   const bySortOrder = (a: FolderTreeNode, b: FolderTreeNode): number =>
     a.position - b.position || a.createdAt - b.createdAt || a.id.localeCompare(b.id);
 
+  const placed = new Set<FolderId>();
+  const place = (nodes: FolderTreeNode[], depth: number): void => {
+    nodes.sort(bySortOrder);
+    for (const node of nodes) {
+      placed.add(node.id);
+      node.depth = depth;
+      place(node.children, depth + 1);
+    }
+  };
+  place(roots, 0);
+
+  for (const node of byId.values()) {
+    if (placed.has(node.id)) continue;
+    const parent = node.parentId === null ? undefined : byId.get(node.parentId);
+    if (parent !== undefined) parent.children = parent.children.filter((child) => child !== node);
+    roots.push(node);
+    place([node], 0);
+  }
   roots.sort(bySortOrder);
-  for (const node of byId.values()) node.children.sort(bySortOrder);
   return roots;
 }
 
