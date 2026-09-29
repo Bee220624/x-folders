@@ -21,6 +21,8 @@ export const ICON_PATHS = {
     'M13 5h6v6h-1.5V7.56l-7.72 7.72-1.06-1.06L16.44 6.5H13V5Zm-7 2h4v1.5H6.5v9h9V13H17v6H5V7h1Z',
   trash:
     'M9 3h6l.75 1.5H19V6H5V4.5h3.25L9 3Zm-2.5 4.5h11l-.8 12.1a1.5 1.5 0 0 1-1.5 1.4H8.8a1.5 1.5 0 0 1-1.5-1.4L6.5 7.5Z',
+  /** A play triangle for video posters. */
+  play: 'M8 5.14v13.72a1 1 0 0 0 1.52.85l10.9-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14Z',
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;
