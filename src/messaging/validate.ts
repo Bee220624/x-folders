@@ -1,11 +1,8 @@
 import {
   FOLDER_TWEETS_PAGE_SIZE,
   MEMBERSHIP_COUNT_BATCH_MAX,
-  TWEET_TEXT_MAX,
 } from '@/core/constants';
-import { upgradeV1Row } from '@/core/domain/snapshot';
 import { DomainError } from '@/core/errors/DomainError';
-import type { TweetRecord } from '@/core/domain/tweet';
 import type {
   CreateFolderPayload,
   FolderIdPayload,
@@ -19,8 +16,8 @@ import type {
   TweetIdPayload,
   TweetIdsPayload,
 } from './protocol';
-import { isNumericTweetId, requireStatusUrl } from '@/utils/url';
-import { trimTweetText } from '@/utils/text';
+import { isNumericTweetId } from '@/utils/url';
+import { sanitizeSnapshot } from './sanitizeSnapshot';
 
 /**
  * The service worker never trusts a content-script payload: a compromised or
@@ -64,31 +61,6 @@ function asBoolean(value: unknown, what: string): boolean {
 function asFiniteNumber(value: unknown, what: string): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) bad(what);
   return value;
-}
-
-function validateTweetRecord(value: unknown): TweetRecord {
-  const raw = asRecord(value, 'tweet');
-  const tweetId = asTweetId(raw.tweetId, 'tweet.tweetId');
-  // The URL is the single source of truth for identity: a mismatch between the
-  // canonical URL and the id means the extractor produced an inconsistent record.
-  const parsed = requireStatusUrl(asString(raw.canonicalUrl, 'tweet.canonicalUrl'));
-  if (parsed.tweetId !== tweetId) {
-    throw new DomainError('INVALID_TWEET_URL', 'Tweet ID 与链接不一致。');
-  }
-  const authorName = raw.authorName === null ? null : asString(raw.authorName, 'tweet.authorName');
-  const now = Date.now();
-  return upgradeV1Row({
-    tweetId,
-    canonicalUrl: parsed.canonicalUrl,
-    // username comes from the URL, never from visible text.
-    username: parsed.username,
-    authorName: authorName === null ? null : authorName.slice(0, 128),
-    text: trimTweetText(asString(raw.text, 'tweet.text'), TWEET_TEXT_MAX),
-    capturedAt: typeof raw.capturedAt === 'number' && Number.isFinite(raw.capturedAt)
-      ? raw.capturedAt
-      : now,
-    updatedAt: now,
-  });
 }
 
 type Validator = (payload: unknown) => unknown;
@@ -143,7 +115,7 @@ const VALIDATORS: Record<RpcMethod, Validator> = {
     const raw = asRecord(payload, 'payload');
     return {
       folderId: asFolderId(raw.folderId, 'folderId'),
-      tweet: validateTweetRecord(raw.tweet),
+      tweet: sanitizeSnapshot(raw.tweet, Date.now()),
     };
   },
 
