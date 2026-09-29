@@ -93,4 +93,27 @@ export default [
     files: ['tests/**/*.ts', 'tests/**/*.tsx'],
     rules: { 'no-console': 'off' },
   },
+  {
+    // Runs inside an x.com page, not in the extension (see tools/capture-fixture.js).
+    files: ['tools/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: 'script',
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        location: 'readonly',
+        history: 'readonly',
+        Node: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        Blob: 'readonly',
+        PopStateEvent: 'readonly',
+        setTimeout: 'readonly',
+        scrollBy: 'readonly',
+        innerHeight: 'readonly',
+        dispatchEvent: 'readonly',
+      },
+    },
+  },
 ];
