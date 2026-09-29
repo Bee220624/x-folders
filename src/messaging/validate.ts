@@ -3,6 +3,7 @@ import {
   MEMBERSHIP_COUNT_BATCH_MAX,
   TWEET_TEXT_MAX,
 } from '@/core/constants';
+import { upgradeV1Row } from '@/core/domain/snapshot';
 import { DomainError } from '@/core/errors/DomainError';
 import type { TweetRecord } from '@/core/domain/tweet';
 import type {
@@ -76,7 +77,7 @@ function validateTweetRecord(value: unknown): TweetRecord {
   }
   const authorName = raw.authorName === null ? null : asString(raw.authorName, 'tweet.authorName');
   const now = Date.now();
-  return {
+  return upgradeV1Row({
     tweetId,
     canonicalUrl: parsed.canonicalUrl,
     // username comes from the URL, never from visible text.
@@ -87,7 +88,7 @@ function validateTweetRecord(value: unknown): TweetRecord {
       ? raw.capturedAt
       : now,
     updatedAt: now,
-  };
+  });
 }
 
 type Validator = (payload: unknown) => unknown;

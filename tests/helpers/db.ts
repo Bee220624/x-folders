@@ -21,12 +21,21 @@ interface TweetOverrides {
 
 export function tweetFixture(id: string, overrides: TweetOverrides = {}): TweetRecord {
   const username = overrides.username ?? 'alice';
+  const text = overrides.text ?? 'hello';
   return {
     tweetId: id,
     canonicalUrl: `https://x.com/${username}/status/${id}`,
     username,
     authorName: overrides.authorName === undefined ? 'Alice' : overrides.authorName,
-    text: overrides.text ?? 'hello',
+    avatarUrl: null,
+    verified: false,
+    postedAt: null,
+    text,
+    segments: text.length > 0 ? [{ kind: 'text', text }] : [],
+    media: [],
+    quote: null,
+    card: null,
+    truncated: false,
     capturedAt: overrides.capturedAt ?? 1_700_000_000_000,
     updatedAt: 1_700_000_000_000,
   };

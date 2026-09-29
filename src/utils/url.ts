@@ -58,3 +58,66 @@ export function isSafeXUrl(raw: string): boolean {
   if (url.protocol !== 'https:') return false;
   return url.hostname === 'x.com' || url.hostname === 'www.x.com' || url.hostname === 'twitter.com';
 }
+
+const IMAGE_HOST = 'pbs.twimg.com';
+
+function parseUrl(raw: string): URL | null {
+  try {
+    return new URL(raw);
+  } catch {
+    return null;
+  }
+}
+
+/** Pictures are only ever loaded from X's image server (work order 3.2). */
+export function isAllowedImageUrl(raw: string): boolean {
+  const url = parseUrl(raw);
+  return (
+    url !== null &&
+    url.protocol === 'https:' &&
+    url.hostname === IMAGE_HOST &&
+    url.port === '' &&
+    url.username === '' &&
+    url.password === ''
+  );
+}
+
+/** Links a post or card may carry: http(s) only, so never javascript:, data: or blob:. */
+export function isAllowedLinkUrl(raw: string): boolean {
+  const url = parseUrl(raw);
+  return url !== null && (url.protocol === 'https:' || url.protocol === 'http:');
+}
+
+const AVATAR_SIZE = /_(?:normal|bigger|mini|x96|200x200|400x400)(\.\w+)$/;
+
+/**
+ * One stable URL per picture. The timeline asks for `name=small`, a post's own
+ * page for `medium` or `large`; without this every page change would look like
+ * new media and cause a pointless rewrite. Expects an allowed URL.
+ */
+export function normalizeImageUrl(raw: string): string {
+  const url = new URL(raw);
+  url.hash = '';
+  if (url.pathname.startsWith('/media/')) {
+    const format = url.searchParams.get('format');
+    url.search = '';
+    if (format !== null) url.searchParams.set('format', format);
+    url.searchParams.set('name', 'small');
+  } else if (url.pathname.startsWith('/profile_images/')) {
+    url.pathname = url.pathname.replace(AVATAR_SIZE, '_normal$1');
+  }
+  return url.toString();
+}
+
+/** A photo at the size a card needs; other kinds of picture come back unchanged. */
+export function imageUrlForSize(raw: string, size: 'small' | 'medium'): string {
+  const url = parseUrl(raw);
+  if (url === null || !url.pathname.startsWith('/media/')) return raw;
+  url.searchParams.set('name', size);
+  return url.toString();
+}
+
+/** `_normal` is 48px and blurry at 40px on a 2x screen; `_bigger` is 73px. */
+export function avatarUrlForDisplay(raw: string): string {
+  return raw.replace(AVATAR_SIZE, '_bigger$1');
+}

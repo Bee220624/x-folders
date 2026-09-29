@@ -65,6 +65,7 @@ function savedView(
 ): SavedTweetView {
   const tweetId = String(1_000_000_000_000_000_000n + BigInt(index));
   const username = `user${index}`;
+  const text = overrides.text ?? `第 ${index} 条收藏`;
   return {
     savedAt: overrides.savedAt ?? BASE_TIME - index * 1000,
     tweet: {
@@ -72,7 +73,15 @@ function savedView(
       canonicalUrl: overrides.url ?? `https://x.com/${username}/status/${tweetId}`,
       authorName: `作者${index}`,
       username,
-      text: overrides.text ?? `第 ${index} 条收藏`,
+      avatarUrl: null,
+      verified: false,
+      postedAt: null,
+      text,
+      segments: [{ kind: 'text', text }],
+      media: [],
+      quote: null,
+      card: null,
+      truncated: false,
       capturedAt: BASE_TIME,
       updatedAt: BASE_TIME,
     },

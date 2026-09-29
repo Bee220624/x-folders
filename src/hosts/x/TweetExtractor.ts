@@ -1,4 +1,5 @@
 import { TWEET_TEXT_MAX } from '@/core/constants';
+import { upgradeV1Row } from '@/core/domain/snapshot';
 import type { TweetRecord } from '@/core/domain/tweet';
 import { findWhere, isInsideAny, readVisibleText } from '@/utils/dom';
 import { trimTweetText } from '@/utils/text';
@@ -157,7 +158,7 @@ export function extractTweet(root: Element, context: ExtractContext): ExtractOut
 
   return {
     status: 'ok',
-    record: {
+    record: upgradeV1Row({
       tweetId,
       canonicalUrl,
       username,
@@ -165,6 +166,6 @@ export function extractTweet(root: Element, context: ExtractContext): ExtractOut
       text: outerText(root, quotes),
       capturedAt: context.now,
       updatedAt: context.now,
-    },
+    }),
   };
 }
