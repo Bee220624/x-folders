@@ -2,7 +2,14 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { X_SELECTORS } from '@/hosts/x/selectors';
 
-export type FixtureName = 'x-home' | 'x-status' | 'x-profile' | 'x-search';
+export type FixtureName =
+  | 'x-home'
+  | 'x-status'
+  | 'x-profile'
+  | 'x-search'
+  | 'x-home-rich'
+  | 'x-status-long'
+  | 'x-bookmarks';
 
 /**
  * Resolved from the process cwd rather than `import.meta.url`: under the jsdom

@@ -37,7 +37,7 @@ describe('extractTweet snapshot', () => {
       ],
       truncated: true,
       media: [{ kind: 'photo', url: photo('P1'), alt: '图像' }],
-      card: { url: 'https://t.co/card', layout: 'large', domain: 'example.com', title: 'A card title' },
+      card: { url: 'https://t.co/card', layout: 'large', domain: null, title: 'A card title' },
       quote: {
         authorName: 'Quoted Person',
         username: 'quoted',

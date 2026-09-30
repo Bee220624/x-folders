@@ -364,12 +364,18 @@ window.__xfCapture = (() => {
 
   function download(name) {
     const blob = new Blob([html()], { type: 'text/html' });
+    // A plain <a> on the page is caught by X's own link handling and nothing
+    // downloads (seen 2026-09-30). Inside a closed shadow root X sees only the
+    // host element, never a link.
+    const host = document.createElement('div');
+    const shadow = host.attachShadow({ mode: 'closed' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = name;
-    document.body.appendChild(link);
+    shadow.appendChild(link);
+    document.body.appendChild(host);
     link.click();
-    link.remove();
+    host.remove();
     setTimeout(() => URL.revokeObjectURL(link.href), 10000);
     return `${name}: ${blob.size} bytes`;
   }

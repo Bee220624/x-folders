@@ -47,13 +47,13 @@ describe('readMedia', () => {
 });
 
 describe('readCard', () => {
-  it('reads a large card: link, domain, title and picture', () => {
+  it('reads a large card: link, title and picture — X shows it no domain', () => {
     const root = mountPost(postHtml({ cardHtml: cardHtml() }));
     expect(readCard(root, [])).toEqual({
       url: 'https://t.co/card',
       layout: 'large',
       title: 'A card title',
-      domain: 'example.com',
+      domain: null,
       imageUrl: 'https://pbs.twimg.com/card_img/1/c?format=jpg&name=small',
     });
   });
