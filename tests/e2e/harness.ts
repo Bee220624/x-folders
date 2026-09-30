@@ -5,12 +5,17 @@ import { chromium, test as base, type BrowserContext, type Page, type Worker } f
 /** The Playwright build: same code, shadow roots open (see src/ui/shared/shadowMode.ts). */
 const EXTENSION_DIR = resolve(process.cwd(), 'dist/chrome-mv3-e2e');
 const FIXTURE_DIR = resolve(process.cwd(), 'tests/fixtures');
+const PLACEHOLDER_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="338"><rect width="600" height="338" fill="#cfd9de"/></svg>';
 
-/** Which captured page answers an x.com path. */
-function fixtureFor(pathname: string): string {
-  if (/^\/[^/]+\/status\/\d+/.test(pathname)) return 'x-status.html';
-  if (pathname.startsWith('/search')) return 'x-search.html';
-  if (pathname === '/home' || pathname === '/') return 'x-home.html';
+/** Which captured page answers an x.com URL; `?fixture=name` picks one explicitly. */
+function fixtureFor(url: URL): string {
+  const named = url.searchParams.get('fixture');
+  if (named !== null && /^[a-z-]+$/.test(named)) return `x-${named}.html`;
+  if (/^\/[^/]+\/status\/\d+/.test(url.pathname)) return 'x-status.html';
+  if (url.pathname.startsWith('/search')) return 'x-search.html';
+  if (url.pathname === '/i/bookmarks') return 'x-bookmarks.html';
+  if (url.pathname === '/home' || url.pathname === '/') return 'x-home.html';
   return 'x-profile.html';
 }
 
@@ -30,9 +35,9 @@ export const test = base.extend<{ harness: Harness }>({
       args: [`--disable-extensions-except=${EXTENSION_DIR}`, `--load-extension=${EXTENSION_DIR}`],
     });
 
-    // Nothing leaves the machine: every other host is refused, and x.com is
-    // answered from the captured fixtures. Later routes win, so the x.com
-    // route is registered last.
+    // Nothing leaves the machine: every other host is refused, x.com is
+    // answered from the captured fixtures and X's picture server with a grey
+    // frame. Later routes win, so the specific ones follow the catch-all.
     await context.route(/^https?:\/\/(?!x\.com\/)/, (route) => route.abort());
     await context.route('https://x.com/**', async (route) => {
       const request = route.request();
@@ -40,13 +45,18 @@ export const test = base.extend<{ harness: Harness }>({
         await route.fulfill({ status: 204, body: '' });
         return;
       }
-      const { pathname } = new URL(request.url());
+      const url = new URL(request.url());
       await route.fulfill({
         status: 200,
         contentType: 'text/html; charset=utf-8',
-        body: readFileSync(resolve(FIXTURE_DIR, fixtureFor(pathname)), 'utf8'),
+        body: readFileSync(resolve(FIXTURE_DIR, fixtureFor(url)), 'utf8'),
       });
     });
+    // Pictures get a plain grey frame, so cards render as they would on X
+    // without anything leaving the machine.
+    await context.route('https://pbs.twimg.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'image/svg+xml', body: PLACEHOLDER_SVG }),
+    );
 
     // The fixtures keep X's DOM but none of its CSS, so the navigation column
     // would just grow with its content (1891px unstyled) and the sidebar budget
