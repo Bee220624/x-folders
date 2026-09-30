@@ -34,6 +34,12 @@ describe('snapshots from the 2026-09 captures', () => {
     expect(home.some((record) => record.truncated)).toBe(true);
   });
 
+  it('reads the domain of every large link card from the line X prints under it', () => {
+    const large = home.flatMap((record) => (record.card?.layout === 'large' ? [record.card] : []));
+    expect(large.length).toBeGreaterThan(0);
+    expect(large.every((card) => card.domain === 'example.com')).toBe(true);
+  });
+
   it('keeps quoted pictures out of the outer post', () => {
     for (const record of home) {
       const quoted = record.quote?.media?.url;

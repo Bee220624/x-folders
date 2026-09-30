@@ -47,15 +47,20 @@ describe('readMedia', () => {
 });
 
 describe('readCard', () => {
-  it('reads a large card: link, title and picture — X shows it no domain', () => {
+  it('reads a large card: link, title, picture, and the domain X prints under it', () => {
     const root = mountPost(postHtml({ cardHtml: cardHtml() }));
     expect(readCard(root, [])).toEqual({
       url: 'https://t.co/card',
       layout: 'large',
       title: 'A card title',
-      domain: null,
+      domain: 'example.com',
       imageUrl: 'https://pbs.twimg.com/card_img/1/c?format=jpg&name=small',
     });
+  });
+
+  it('leaves the domain empty when a large card has no line under it', () => {
+    const root = mountPost(postHtml({ cardHtml: cardHtml({ domainLine: null }) }));
+    expect(readCard(root, [])?.domain).toBeNull();
   });
 
   it('knows a small card and one without a picture', () => {

@@ -52,10 +52,26 @@ function leafTexts(scope: Element): string[] {
 }
 
 /**
+ * A large card holds no domain of its own: X prints it under the card, as a
+ * second link in the card's container (checked on real X, 2026-10-01).
+ */
+function domainBeside(card: Element): string | null {
+  const container = card.parentElement;
+  if (container === null) return null;
+  for (const link of Array.from(container.querySelectorAll(X_SELECTORS.anyLink))) {
+    if (card.contains(link)) continue;
+    const found = DOMAIN_LINE.exec(readVisibleText(link).trim())?.[1];
+    if (found !== undefined) return found.toLowerCase();
+  }
+  return null;
+}
+
+/**
  * The post's link preview. The layout comes from X's test ids; the domain is
- * the first text line shaped like a bare domain and the title the first other
- * line. Reading the shape of the text rather than its wording keeps this
- * independent of X's interface language.
+ * the first text line shaped like a bare domain — inside a small card, or on
+ * the line under a large one — and the title the first other line. Reading
+ * the shape of the text rather than its wording keeps this independent of
+ * X's interface language.
  */
 export function readCard(scope: Element, exclude: readonly Element[]): LinkCard | null {
   const card = findWhere(scope, X_SELECTORS.card, (candidate) => !isInsideAny(candidate, exclude));
@@ -70,6 +86,7 @@ export function readCard(scope: Element, exclude: readonly Element[]): LinkCard 
     if (found !== undefined) domain ??= found.toLowerCase();
     else title ??= line.slice(0, TITLE_MAX);
   }
+  domain ??= domainBeside(card);
   return {
     url: anchor.href,
     layout: card.querySelector(X_SELECTORS.cardSmallMedia) !== null ? 'small' : 'large',

@@ -142,16 +142,20 @@ export interface CardOptions {
   href?: string;
   /** null: a card without a picture. */
   image?: string | null;
-  /** Small cards only: the first line of the detail block. Large cards show no domain at all. */
-  domainLine?: string;
+  /**
+   * Small cards: the first line of the detail block. Large cards: the line X
+   * prints under the card (a second link, "来自 example.com"). null leaves it out.
+   */
+  domainLine?: string | null;
   title?: string;
 }
 
 /**
  * A link preview, shaped after the 2026-09-30 capture. A large card is one
- * link holding the picture with the title laid over it — no domain anywhere.
- * A small card is the picture, then a second link holding the detail block:
- * domain, title and description lines.
+ * link holding the picture with the title laid over it; the domain sits
+ * outside the card, in a second link X prints under it (checked on real X,
+ * 2026-10-01). A small card is the picture, then a second link holding the
+ * detail block: domain, title and description lines.
  */
 export function cardHtml(options: CardOptions = {}): string {
   const href = options.href ?? 'https://t.co/card';
@@ -164,16 +168,18 @@ export function cardHtml(options: CardOptions = {}): string {
       '<div data-testid="card.wrapper">' +
       `<div data-testid="card.layoutSmall.media"><a href="${href}" role="link">${picture}</a></div>` +
       `<a href="${href}" role="link"><div data-testid="card.layoutSmall.detail">` +
-      `<span><span>${options.domainLine ?? 'example.com'}</span></span>` +
+      (options.domainLine === null ? '' : `<span><span>${options.domainLine ?? 'example.com'}</span></span>`) +
       `<span><span>${title}</span></span>` +
       '<span><span>A description line</span></span>' +
       '</div></a></div>'
     );
   }
+  const domainLine =
+    options.domainLine === null ? '' : `<a href="${href}" role="link">${options.domainLine ?? '来自 example.com'}</a>`;
   return (
-    '<div data-testid="card.wrapper">' +
+    '<div><div data-testid="card.wrapper">' +
     `<div data-testid="card.layoutLarge.media"><a href="${href}" role="link" aria-label="LABEL">` +
-    `${picture}<span>${title}</span></a></div><div></div></div>`
+    `${picture}<span>${title}</span></a></div><div></div></div>${domainLine}</div>`
   );
 }
 
