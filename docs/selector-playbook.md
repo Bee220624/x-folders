@@ -176,3 +176,30 @@ chrome.storage.local.set({ 'xf:debug': true })
 3. **详情页永久链接行**（2.2）——结构比 header 更"边缘"，改动风险高。兜底：焦点推文可以从 `location.pathname` 取 ID。
 4. **侧栏列结构**（2.8）——公共祖先法比较稳，但 X 若把账号切换按钮移出该列就要重写。
 5. `data-testid="tweet"` / `tweetText` / `User-Name` ——最稳定的一批，多年未变。
+
+## 5. 快照相关实测（M2，2026-09-29 至 10-01）
+
+提取帖子快照（`src/hosts/x/extract*.ts`）依据的事实，来自真实登录态 x.com 的只读实测和
+`tests/fixtures/x-home-rich.html` 等 2026-09-30 的样本。
+
+- **认证标记** `svg[data-testid="icon-verified"]` 在 `User-Name` 的第一个链接里；引用块的认证标记在它自己的
+  `User-Name` 里。
+- **头像** 在 `Tweet-User-Avatar` 里懒加载，`img` 与 `background-image` 两种画法都有；后台标签页里两者都
+  还没有，所以保存时重新读取。当前地址多为 `_x96` 尺寸，存储时统一成 `_normal`。
+- **视频**：`tweetPhoto > placementTracking > videoPlayer > videoComponent > video[poster]`，`src` 为
+  `blob:`；GIF 的封面路径含 `/tweet_video_thumb/`。
+- **广告**没有 `<time>`。`placementTracking` 不能单独作为广告判据：它会出现在普通视频帖内部，广告帖上则
+  可能挂在帖子外层（`cellInnerDiv` 之内、`article` 之外）。
+- **引用块** `div[role="link"][tabindex="0"]` 里**没有**链接：`@用户名` 在 `div[tabindex="-1"]` 里，时间在
+  `div > time` 里；引用的媒体在 `testCondensedMedia` 里，敏感内容被 `previewInterstitial` 遮住。还见到
+  `nestedQuotePreview`（引用里的引用），目前不读取。
+- **「显示更多」**是 `tweetText` 的兄弟 `[data-testid="tweet-text-show-more-link"]`；详情页主帖显示全文，
+  没有它。
+- **链接卡片**：小卡片（`card.layoutSmall.media` + `card.layoutSmall.detail`）的域名、标题、描述都在卡片
+  内部；大卡片（`card.layoutLarge.media`）内部只有图片和盖在图上的标题，域名印在卡片下方的另一个链接里
+  （卡片的父容器之内、卡片之外）。域名与标题按文字的形状区分，不依赖界面语言。广告的大卡片里还会有视频
+  或轮播（`LayoutCardCarousel-slide`）。
+- **X 文章**的封面是 `article-cover-image`，目前不读取。
+- **页面翻译**：Chrome 翻译会在文本里插入 `<font>`。提取按可见文字读取，结构不受影响，但读到的是译文。
+- **x.com 上的 `<a>` 点击会被 X 自己的链接处理接管**：挂在页面上的下载链接不起作用，要放进封闭的 Shadow
+  Root。反过来，`history.pushState` 加一次 `popstate` 事件就能让 X 在页面内切换路由（采集脚本的 `go()`）。
